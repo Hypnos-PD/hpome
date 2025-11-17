@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,9 +10,9 @@
             --background-color: #fdfdfd;
             --text-color: #333;
             --motto-font-size: 3rem;
-                --terminal-background: #0f0f12; /* 更接近 Windows Terminal 深色 */
-                --terminal-text: #d4d4d4; /* 取消绿色，使用偏灰白的文本 */
-                --terminal-accent: #0aa0ff; /* 输入提示/光标高亮色（蓝青色，Windows Terminal 风格） */
+            --terminal-background: #0f0f12;
+            --terminal-text: #d4d4d4;
+            --terminal-accent: #0aa0ff;
         }
 
         body {
@@ -45,9 +46,9 @@
         .avatar {
             width: 300px;
             height: 300px;
-            aspect-ratio: 1 / 1; /* 保持1:1的比例 */
+            aspect-ratio: 1 / 1;
             margin-bottom: 2rem;
-            background-image: url('https://avatars.githubusercontent.com/u/177898240'); 
+            background-image: url('https://avatars.githubusercontent.com/u/177898240');
             background-size: cover;
             background-position: center;
             border: 2px solid var(--text-color);
@@ -56,7 +57,7 @@
         .terminal {
             width: 80%;
             max-width: 800px;
-            height: 420px; /* 增高以适配更大字体 */
+            height: 420px;
             background-color: var(--terminal-background);
             color: var(--terminal-text);
             position: relative;
@@ -65,12 +66,12 @@
             box-sizing: border-box;
             overflow-y: auto;
             text-align: left;
-            border: none; /* 无圆角设计 */
-            font-family: 'VT323', 'Noto Serif SC', 'Noto Sans SC', 'Menlo', 'Monaco', 'Courier New', monospace; /* 窄像素/终端风格；中文回退到 思源宋体 (Noto Serif SC) */
-            font-size: 30px; /* 大幅放大终端字体（约原来的两倍） */
-            background: rgba(8,10,12,0.92); /* 更深、统一的终端背景 */
-            border: 1px solid rgba(255,255,255,0.04);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 40px rgba(10,160,255,0.06) inset;
+            border: none;
+            font-family: 'VT323', 'Noto Serif SC', 'Noto Sans SC', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 30px;
+            background: rgba(8, 10, 12, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 40px rgba(10, 160, 255, 0.06) inset;
             padding: 1.25rem;
         }
 
@@ -98,46 +99,43 @@
             outline: none;
         }
 
-        /* 扫描线与噪点层（CRT 扫描线更明显） */
         .terminal::before {
             content: "";
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background-image: linear-gradient(rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.25) 50%, transparent 50%);
-            background-size: 100% 3px; /* 每 3px 一条暗线 */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.25) 50%, transparent 50%);
+            background-size: 100% 3px;
             mix-blend-mode: multiply;
             opacity: 0.45;
         }
 
-        /* 轻微噪点（利用 SVG filter 更自然，但此层做微妙颗粒） */
         .terminal::after {
             content: "";
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
             background-size: 4px 4px;
             mix-blend-mode: overlay;
             opacity: 0.2;
         }
 
-        /* 输出内容：每行作为 .line，使用伪元素渲染模糊的霓虹层，主文本在上层清晰可读 */
         .terminal-output {
             white-space: pre-wrap;
             color: var(--terminal-text);
             position: relative;
-            font-size: 28px; /* 输出字体放大以匹配终端（约两倍） */
+            font-size: 28px;
             line-height: 1.45;
         }
 
-        .terminal-output .line{
+        .terminal-output .line {
             display: block;
             position: relative;
             padding-right: 0.25rem;
         }
 
-        .terminal-output .line::before{
+        .terminal-output .line::before {
             content: attr(data-text);
             position: absolute;
             left: 0;
@@ -153,26 +151,40 @@
             white-space: pre-wrap;
         }
 
-        .terminal-output .line .plain{
+        .terminal-output .line .plain {
             position: relative;
             z-index: 1;
         }
 
-        @keyframes neonPulse{
-            0%{ filter: blur(3px) saturate(1.2); opacity:0.7; transform: translateY(0px) scale(1); }
-            50%{ filter: blur(8px) saturate(1.8); opacity:1; transform: translateY(-0.6px) scale(1.01); }
-            100%{ filter: blur(3px) saturate(1.2); opacity:0.75; transform: translateY(0px) scale(1); }
+        @keyframes neonPulse {
+            0% {
+                filter: blur(3px) saturate(1.2);
+                opacity: 0.7;
+                transform: translateY(0px) scale(1);
+            }
+
+            50% {
+                filter: blur(8px) saturate(1.8);
+                opacity: 1;
+                transform: translateY(-0.6px) scale(1.01);
+            }
+
+            100% {
+                filter: blur(3px) saturate(1.2);
+                opacity: 0.75;
+                transform: translateY(0px) scale(1);
+            }
         }
 
-        /* 微小文本辉光/阴影，模仿终端字体在深色背景下的边缘 */
-        .terminal-output span, .terminal-output, .terminal-input {
-            text-shadow: 0 0 6px rgba(10,160,255,0.25), 0 1px 0 rgba(0,0,0,0.6);
+        .terminal-output span,
+        .terminal-output,
+        .terminal-input {
+            text-shadow: 0 0 6px rgba(10, 160, 255, 0.25), 0 1px 0 rgba(0, 0, 0, 0.6);
         }
 
-        /* 让提示符呈现霓虹渐变 */
         .terminal-prompt {
             color: var(--terminal-accent-bright, #7ce0ff);
-            text-shadow: 0 0 10px rgba(124,224,255,0.9), 0 1px 0 rgba(0,0,0,0.6);
+            text-shadow: 0 0 10px rgba(124, 224, 255, 0.9), 0 1px 0 rgba(0, 0, 0, 0.6);
         }
 
         footer {
@@ -191,6 +203,7 @@
             height: 24px;
             line-height: 1;
         }
+
         .social-icons i {
             font-size: 1.5rem;
             color: inherit;
@@ -198,44 +211,45 @@
             width: 24px;
             height: 24px;
         }
+
         .social-icons svg {
             width: 24px;
             height: 24px;
             display: block;
         }
 
-        /* 补全提示框（浮在输入行上方） */
         .suggestions {
             position: absolute;
             left: 1.25rem;
             right: 1.25rem;
-            bottom: 3.25rem; /* 在输入行上方 */
+            bottom: 3.25rem;
             max-height: 160px;
             overflow: auto;
-            background: rgba(6,8,10,0.9);
-            border: 1px solid rgba(255,255,255,0.04);
+            background: rgba(6, 8, 10, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             color: var(--terminal-text);
             font-family: inherit;
             font-size: 18px;
             padding: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
             z-index: 40;
-            display: none; /* 默认隐藏 */
+            display: none;
             gap: 6px;
             border-radius: 4px;
         }
-        .suggestions .item{
+
+        .suggestions .item {
             padding: 4px 8px;
             cursor: pointer;
             border-radius: 3px;
         }
+
         .suggestions .item:hover,
-        .suggestions .item.active{
-            background: rgba(10,160,255,0.08);
+        .suggestions .item.active {
+            background: rgba(10, 160, 255, 0.08);
             color: var(--terminal-accent);
         }
 
-        /* 无圆角设计 */
         * {
             border-radius: 0 !important;
         }
@@ -243,7 +257,9 @@
     <!-- 引入开源图标库 Boxicons -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <!-- 引入更窄的像素/终端字体 VT323（Latin）、思源宋体 (Noto Serif SC) 作为中文终端字体回退，以及 Noto Sans SC 备选 -->
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap"
+        rel="stylesheet">
     <!-- favicon 使用 GitHub avatar -->
     <link rel="icon" href="https://avatars.githubusercontent.com/u/177898240" />
 
@@ -251,50 +267,59 @@
     <svg width="0" height="0" style="position:absolute;">
         <defs>
             <filter id="crtFilter" x="-20%" y="-20%" width="140%" height="140%" primitiveUnits="objectBoundingBox">
-                    <!-- 1) 基础模糊（整体轻微模糊，营造光晕），会动态变化 -->
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" result="blurred" id="baseBlur" />
-                    <animate xlink:href="#baseBlur" attributeName="stdDeviation" values="0.3;1.1;0.4" dur="6s" repeatCount="indefinite" />
+                <!-- 1) 基础模糊（整体轻微模糊，营造光晕），会动态变化 -->
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" result="blurred" id="baseBlur" />
+                <animate xlink:href="#baseBlur" attributeName="stdDeviation" values="0.3;1.1;0.4" dur="6s"
+                    repeatCount="indefinite" />
 
                 <!-- 2) 色差：分别偏移 R/G/B 通道并合成 -->
-                <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rOnly"/>
-                <feOffset in="rOnly" dx="-0.6" dy="0" result="rOffset"/>
-                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gOnly"/>
-                <feOffset in="gOnly" dx="0.2" dy="0" result="gOffset"/>
-                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="bOnly"/>
-                <feOffset in="bOnly" dx="0.6" dy="0" result="bOffset"/>
+                <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                    result="rOnly" />
+                <feOffset in="rOnly" dx="-0.6" dy="0" result="rOffset" />
+                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                    result="gOnly" />
+                <feOffset in="gOnly" dx="0.2" dy="0" result="gOffset" />
+                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                    result="bOnly" />
+                <feOffset in="bOnly" dx="0.6" dy="0" result="bOffset" />
 
                 <!-- 3) 合并色差与模糊层，制造霓虹光晕 -->
-                <feBlend in="rOffset" in2="gOffset" mode="screen" result="rg"/>
-                <feBlend in="rg" in2="bOffset" mode="screen" result="rgbAber"/>
-                <feGaussianBlur in="rgbAber" stdDeviation="2" result="glow" id="glowBlur"/>
-                <animate xlink:href="#glowBlur" attributeName="stdDeviation" values="1.2;3.6;1.2" dur="5.5s" repeatCount="indefinite" />
+                <feBlend in="rOffset" in2="gOffset" mode="screen" result="rg" />
+                <feBlend in="rg" in2="bOffset" mode="screen" result="rgbAber" />
+                <feGaussianBlur in="rgbAber" stdDeviation="2" result="glow" id="glowBlur" />
+                <animate xlink:href="#glowBlur" attributeName="stdDeviation" values="1.2;3.6;1.2" dur="5.5s"
+                    repeatCount="indefinite" />
 
                 <!-- 4) 混合 glow 与 原始模糊输出，保留清晰度同时有光晕 -->
-                <feBlend in="blurred" in2="glow" mode="screen" result="blurGlow"/>
+                <feBlend in="blurred" in2="glow" mode="screen" result="blurGlow" />
 
                 <!-- 5) 轻微噪点（使用 feTurbulence 但低强度）增强质感 -->
-                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch" result="noise" id="noiseTurb"/>
-                <animate xlink:href="#noiseTurb" attributeName="baseFrequency" values="0.6;1.2;0.6" dur="7s" repeatCount="indefinite" />
-                <feColorMatrix in="noise" type="saturate" values="0" result="noiseMono"/>
+                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch" result="noise"
+                    id="noiseTurb" />
+                <animate xlink:href="#noiseTurb" attributeName="baseFrequency" values="0.6;1.2;0.6" dur="7s"
+                    repeatCount="indefinite" />
+                <feColorMatrix in="noise" type="saturate" values="0" result="noiseMono" />
                 <feComponentTransfer in="noiseMono" result="noiseAlpha">
-                    <feFuncA type="table" tableValues="0 0.06"/>
+                    <feFuncA type="table" tableValues="0 0.06" />
                 </feComponentTransfer>
-                <feComposite in="noiseAlpha" in2="blurGlow" operator="in" result="glowWithNoise"/>
+                <feComposite in="noiseAlpha" in2="blurGlow" operator="in" result="glowWithNoise" />
 
                 <!-- 6) 最终合成：将 glowWithNoise 与 原始 SourceGraphic 混合，保留对比 -->
-                <feBlend in="SourceGraphic" in2="glowWithNoise" mode="screen" result="final"/>
-                <feComposite in="final" in2="SourceGraphic" operator="over"/>
+                <feBlend in="SourceGraphic" in2="glowWithNoise" mode="screen" result="final" />
+                <feComposite in="final" in2="SourceGraphic" operator="over" />
             </filter>
         </defs>
     </svg>
 </head>
+
 <body>
 
     <div class="container">
-        <h1 class="motto">沈酣世事，混如酒蠁寻酸。</h1>
+        <h1 class="motto">沈酣世味，混如酒蠁寻酸。</h1>
         <div class="avatar"></div>
         <div class="terminal" id="terminal">
-            <div class="terminal-output" id="terminal-output">欢迎。输入 'help' 获取可用命令列表。<br>你也可以在这里运行 JavaScript 语句。<br></div>
+            <div class="terminal-output" id="terminal-output">欢迎。输入 'help' 获取可用命令列表。<br>你也可以在这里运行简单的 JavaScript 语句。<br>
+            </div>
             <div class="terminal-input-line">
                 <span class="terminal-prompt">&gt;</span>
                 <input type="text" class="terminal-input" id="terminal-input" autofocus>
@@ -304,15 +329,22 @@
 
     <footer>
         <div class="social-icons">
-            <a href="https://github.com/Hypnos-PD" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub">
+            <a href="https://github.com/Hypnos-PD" target="_blank" rel="noopener noreferrer" title="GitHub"
+                aria-label="GitHub">
                 <i class="bx bxl-github" aria-hidden="true"></i>
             </a>
-            <a href="https://qm.qq.com/q/Ad4Le8wLFm" target="_blank" rel="noopener noreferrer" title="QQ" aria-label="QQ">
-                <svg t="1763345059954" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1542" width="24" height="24" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M824.8 613.2c-16-51.4-34.4-94.6-62.7-165.3C766.5 262.2 689.3 112 511.5 112 331.7 112 256.2 265.2 261 447.9c-28.4 70.8-46.7 113.7-62.7 165.3-34 109.5-23 154.8-14.6 155.8 18 2.2 70.1-82.4 70.1-82.4 0 49 25.2 112.9 79.8 159-26.4 8.1-85.7 29.9-71.6 53.8 11.4 19.3 196.2 12.3 249.5 6.3 53.3 6 238.1 13 249.5-6.3 14.1-23.8-45.3-45.7-71.6-53.8 54.6-46.2 79.8-110.1 79.8-159 0 0 52.1 84.6 70.1 82.4 8.5-1.1 19.5-46.4-14.5-155.8z" p-id="1543"></path>
+            <a href="https://qm.qq.com/q/Ad4Le8wLFm" target="_blank" rel="noopener noreferrer" title="QQ"
+                aria-label="QQ">
+                <svg t="1763345059954" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                    xmlns="http://www.w3.org/2000/svg" p-id="1542" width="24" height="24" aria-hidden="true"
+                    focusable="false">
+                    <path fill="currentColor"
+                        d="M824.8 613.2c-16-51.4-34.4-94.6-62.7-165.3C766.5 262.2 689.3 112 511.5 112 331.7 112 256.2 265.2 261 447.9c-28.4 70.8-46.7 113.7-62.7 165.3-34 109.5-23 154.8-14.6 155.8 18 2.2 70.1-82.4 70.1-82.4 0 49 25.2 112.9 79.8 159-26.4 8.1-85.7 29.9-71.6 53.8 11.4 19.3 196.2 12.3 249.5 6.3 53.3 6 238.1 13 249.5-6.3 14.1-23.8-45.3-45.7-71.6-53.8 54.6-46.2 79.8-110.1 79.8-159 0 0 52.1 84.6 70.1 82.4 8.5-1.1 19.5-46.4-14.5-155.8z"
+                        p-id="1543"></path>
                 </svg>
             </a>
-            <a href="https://steamcommunity.com/id/hypnospd" target="_blank" rel="noopener noreferrer" title="Steam" aria-label="Steam">
+            <a href="https://steamcommunity.com/id/hypnospd" target="_blank" rel="noopener noreferrer" title="Steam"
+                aria-label="Steam">
                 <i class="bx bxl-steam" aria-hidden="true"></i>
             </a>
         </div>
@@ -321,41 +353,36 @@
     <script>
         const terminalOutput = document.getElementById('terminal-output');
         const terminalInput = document.getElementById('terminal-input');
-        const pageStart = Date.now(); // 用于 uptime
+        const pageStart = Date.now();
 
-        // 通用工具：安全转义与输出追加
-        function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-        function appendLine(text){
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function appendLine(text) {
             terminalOutput.innerHTML += `<span class="line" data-text="${escapeHtml(text)}"><span class="plain">${escapeHtml(text)}</span></span>\n`;
         }
 
-        // 将任意 JS 代码在页面上下文中执行，捕获 console 输出并显示在终端
-        function formatForTerminal(v){
-            try{ return typeof v === 'string' ? v : JSON.stringify(v, null, 2); }catch(e){ return String(v); }
+        function formatForTerminal(v) {
+            try { return typeof v === 'string' ? v : JSON.stringify(v, null, 2); } catch (e) { return String(v); }
         }
-        async function executeJS(code){
+        async function executeJS(code) {
             const origLog = console.log, origInfo = console.info, origWarn = console.warn, origError = console.error, origDir = console.dir;
-            function capture(type, args){
-                try{ const txt = args.map(a=>formatForTerminal(a)).join(' '); appendLine(`[console.${type}] ${txt}`); }catch(e){ appendLine(`[console.${type}] (unprintable)`); }
+            function capture(type, args) {
+                try { const txt = args.map(a => formatForTerminal(a)).join(' '); appendLine(`[console.${type}] ${txt}`); } catch (e) { appendLine(`[console.${type}] (unprintable)`); }
             }
-            console.log = function(...args){ capture('log', args); try{ origLog.apply(console, args); }catch(e){} };
-            console.info = function(...args){ capture('info', args); try{ origInfo.apply(console, args); }catch(e){} };
-            console.warn = function(...args){ capture('warn', args); try{ origWarn.apply(console, args); }catch(e){} };
-            console.error = function(...args){ capture('error', args); try{ origError.apply(console, args); }catch(e){} };
-            console.dir = function(...args){ capture('dir', args); try{ origDir.apply(console, args); }catch(e){} };
+            console.log = function (...args) { capture('log', args); try { origLog.apply(console, args); } catch (e) { } };
+            console.info = function (...args) { capture('info', args); try { origInfo.apply(console, args); } catch (e) { } };
+            console.warn = function (...args) { capture('warn', args); try { origWarn.apply(console, args); } catch (e) { } };
+            console.error = function (...args) { capture('error', args); try { origError.apply(console, args); } catch (e) { } };
+            console.dir = function (...args) { capture('dir', args); try { origDir.apply(console, args); } catch (e) { } };
 
-            try{
-                // 为了在 REPL 中让变量可持久化，对简单的顶层 `let/const name = expr` 进行转换为 `window.name = expr`。
-                // 这会改变 let/const 的块级语义，但会更接近开发者控制台的 REPL 行为。
+            try {
                 let transformed = code.replace(/^\s*(?:let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*/m, 'window.$1 = ');
 
                 let result;
-                try{
+                try {
                     result = (0, eval)(transformed);
-                    if(result instanceof Promise) result = await result;
-                }catch(e){
-                    // 如果是因为包含 top-level await 导致的语法错误，则回退到异步 IIFE（注意：此模式下声明的局部变量不会持久化到全局）
-                    if(e instanceof SyntaxError && /\bawait\b/.test(code)){
+                    if (result instanceof Promise) result = await result;
+                } catch (e) {
+                    if (e instanceof SyntaxError && /\bawait\b/.test(code)) {
                         const fn = new Function('return (async function(){\n' + code + '\n})();');
                         result = await fn();
                     } else {
@@ -363,16 +390,14 @@
                     }
                 }
 
-                if(typeof result !== 'undefined') appendLine(formatForTerminal(result));
-            }catch(e){
+                if (typeof result !== 'undefined') appendLine(formatForTerminal(result));
+            } catch (e) {
                 appendLine('JS Error: ' + (e && e.stack ? e.stack : String(e)));
             }
 
-            // 恢复 console
-            try{ console.log = origLog; console.info = origInfo; console.warn = origWarn; console.error = origError; console.dir = origDir; }catch(e){}
+            try { console.log = origLog; console.info = origInfo; console.warn = origWarn; console.error = origError; console.dir = origDir; } catch (e) { }
         }
 
-        // 可用的静态命令文本（动态命令在解析器中处理）
         const commands = {
             'help': '可用的命令: \n' +
                 '  help - 显示所有可用命令\n' +
@@ -383,11 +408,11 @@
                 '  echo <text> - 回显文本\n' +
                 '  uptime - 页面运行时间\n' +
                 '  link [name] - 导航到我的其它网站，或不带参数列出可用站点',
-            'about': '你好，我是HypnosPD，目前本科在读\n' + 
-                 '有言即达，百无禁忌。',
+            'about': '你好，我是HypnosPD，目前本科在读\n' +
+                '有言即达，百无禁忌。',
             'contact': '你可以通过以下方式联系我:\n' +
-                   '  Email: [hypnospd@qq.com]\n' +
-                   '  也可以通过页脚的社交媒体图标找到我。',
+                '  Email: [hypnospd@qq.com]\n' +
+                '  也可以通过页脚的社交媒体图标找到我。',
             'link': '打开我的其它网站: 使用 link <name> 打开对应站点',
             'clear': '清除终端（别名: cls）',
             'cls': '清除终端（别名: clear）',
@@ -399,38 +424,33 @@
             'get': '读取全局变量：get <name>'
         };
 
-        // 链接表：link 命令使用（保留原始键，并生成小写不敏感的映射）
         const links = {
             'WordleMathSolver': 'https://wdmt.hypd.asia',
             'AzothPath': 'https://azoth.ttopoo.com'
         };
 
-        // 规范化 links：创建一个小写键到 URL 的不区分大小写映射，并保存原始名映射
         const linksNormalized = {};
         const linksOriginalName = {};
         Object.keys(links).forEach(k => { linksNormalized[k.toLowerCase()] = links[k]; linksOriginalName[k.toLowerCase()] = k; });
 
-        // 补全相关状态
         let completionMatches = [];
         let completionIndex = -1;
         let completionPrefix = '';
 
-        // 在终端内创建并管理建议列 UI（浮动、可点击）
         const suggestionsEl = document.createElement('div');
         suggestionsEl.id = 'suggestions';
         suggestionsEl.className = 'suggestions';
         document.getElementById('terminal').appendChild(suggestionsEl);
 
-        function showSuggestions(matches, highlightIndex = 0){
+        function showSuggestions(matches, highlightIndex = 0) {
             suggestionsEl.innerHTML = '';
-            if(!matches || matches.length === 0){
+            if (!matches || matches.length === 0) {
                 suggestionsEl.style.display = 'none';
                 return;
             }
-            matches.slice(0,50).forEach((m, i) => {
+            matches.slice(0, 50).forEach((m, i) => {
                 const it = document.createElement('div');
-                it.className = 'item' + (i===highlightIndex? ' active':'');
-                // 若是 links 的键，显示原始大小写名以便可读
+                it.className = 'item' + (i === highlightIndex ? ' active' : '');
                 it.textContent = (linksOriginalName[m] || m);
                 it.tabIndex = 0;
                 it.addEventListener('click', () => {
@@ -442,160 +462,141 @@
             suggestionsEl.style.display = 'block';
         }
 
-        function hideSuggestions(){
+        function hideSuggestions() {
             suggestionsEl.style.display = 'none';
         }
 
-        function applyCompletion(choice){
+        function applyCompletion(choice) {
             const val = terminalInput.value;
             const parts = val.split(/\s+/);
-            if(parts.length <= 1 || (parts.length>0 && parts[0].toLowerCase() !== 'link')){
-                // 完成第一个词
-                terminalInput.value = choice + (choice.indexOf(' ')>=0? '':' ');
+            if (parts.length <= 1 || (parts.length > 0 && parts[0].toLowerCase() !== 'link')) {
+                terminalInput.value = choice + (choice.indexOf(' ') >= 0 ? '' : ' ');
             } else {
-                // 完成第二个词（如 link 命令）
-                // 若存在原始大小写名称，使用原始名称填充以便可读
                 parts[1] = (linksOriginalName[choice] || choice);
-                terminalInput.value = parts.slice(0,2).join(' ') + ' ';
+                terminalInput.value = parts.slice(0, 2).join(' ') + ' ';
             }
-            // 重置状态
             completionMatches = [];
             completionIndex = -1;
             completionPrefix = '';
             hideSuggestions();
         }
 
-        function computeMatches(raw){
+        function computeMatches(raw) {
             const inputRaw = (typeof raw === 'string') ? raw : (terminalInput.value || '');
             const endsWithSpace = /\s$/.test(inputRaw);
-            const parts = inputRaw.trim().split(/\s+/).filter(p=>p.length>0);
+            const parts = inputRaw.trim().split(/\s+/).filter(p => p.length > 0);
 
-            if(parts.length === 0){
-                // 空输入时不要显示任何补全
+            if (parts.length === 0) {
                 return [];
             }
 
             const first = parts[0].toLowerCase();
-            // 如果首词是 link，则对第二词进行补全（支持在输入了空格后显示全部键）
-            if(first === 'link'){
+            if (first === 'link') {
                 const secondPrefix = (parts[1] || '');
                 const keys = Object.keys(linksNormalized);
-                if(secondPrefix === '' && !endsWithSpace){
-                    // 用户可能输入了 "link" 没有空格，建议保留 link 本身
+                if (secondPrefix === '' && !endsWithSpace) {
                     return ['link'];
                 }
                 const pref = secondPrefix.toLowerCase();
                 return keys.filter(k => k.startsWith(pref));
             }
 
-            // 非 link：仅补全命令名（不要混入 link 的参数）
             const prefix = first;
-            const cmds = Object.keys(commands).map(k=>k.toLowerCase());
+            const cmds = Object.keys(commands).map(k => k.toLowerCase());
             return cmds.filter(k => k.startsWith(prefix));
         }
 
-        terminalInput.addEventListener('keydown', async function(event) {
+        terminalInput.addEventListener('keydown', async function (event) {
             if (event.key === 'Enter') {
                 const command = terminalInput.value.trim();
-                if (!command) return; // 忽略空输入
+                if (!command) return; 
 
-                // 显示命令行本身
                 appendLine('> ' + command);
 
-                    // 动态命令解析（优先）
-                    const lc = command.toLowerCase();
-                    if (lc === 'clear' || lc === 'cls'){
-                        terminalOutput.innerHTML = '';
-                    } else if (lc === 'date'){
-                        appendLine(new Date().toString());
-                    } else if (lc.startsWith('echo ')){
-                        appendLine(command.slice(5));
-                    } else if (lc === 'uptime'){
-                        const s = Math.floor((Date.now()-pageStart)/1000);
-                        appendLine(`页面已运行: ${s} 秒`);
-                    } else if (lc === 'randbg' || lc.startsWith('randbg ')){
-                        // randbg [color]
-                        const parts = command.split(/\s+/);
-                        let col = parts[1];
-                        if(!col){
-                            // 随机生成一个鲜艳的 HSL 颜色
-                            const h = Math.floor(Math.random()*360);
-                            const s = 60 + Math.floor(Math.random()*30);
-                            const l = 45 + Math.floor(Math.random()*15);
-                            col = `hsl(${h} ${s}% ${l}%)`;
-                        }
-                        try{
-                            document.body.style.backgroundColor = col;
-                            appendLine(`已将页面背景色设为: ${col}`);
-                        }catch(e){
-                            appendLine(`无法设置颜色: ${col}`);
-                        }
-                    } else if (lc.startsWith('set ')){
-                        // set <name> <js-expr>
-                        const parts = command.split(/\s+/);
-                        if(parts.length < 3){ appendLine('用法：set <name> <js-expr>'); }
-                        else{
-                            const name = parts[1];
-                            const expr = command.slice(command.indexOf(name) + name.length + 1);
-                            try{
-                                const val = (0, eval)(expr);
-                                window[name] = val;
-                                appendLine(`已设置全局 ${name}`);
-                            }catch(e){ appendLine('设置失败: ' + e); }
-                        }
-                    } else if (lc.startsWith('get ')){
-                        const parts = command.split(/\s+/);
-                        if(parts.length !== 2) { appendLine('用法：get <name>'); }
-                        else{
-                            const name = parts[1];
-                            try{ appendLine(String(window[name])); }catch(e){ appendLine('读取失败'); }
-                        }
-                    } else if (lc.startsWith('link')){
+                const lc = command.toLowerCase();
+                if (lc === 'clear' || lc === 'cls') {
+                    terminalOutput.innerHTML = '';
+                } else if (lc === 'date') {
+                    appendLine(new Date().toString());
+                } else if (lc.startsWith('echo ')) {
+                    appendLine(command.slice(5));
+                } else if (lc === 'uptime') {
+                    const s = Math.floor((Date.now() - pageStart) / 1000);
+                    appendLine(`页面已运行: ${s} 秒`);
+                } else if (lc === 'randbg' || lc.startsWith('randbg ')) {
                     const parts = command.split(/\s+/);
-                    if (parts.length === 1){
-                        // 列出可用链接（显示原始键名）
+                    let col = parts[1];
+                    if (!col) {
+                        const h = Math.floor(Math.random() * 360);
+                        const s = 60 + Math.floor(Math.random() * 30);
+                        const l = 45 + Math.floor(Math.random() * 15);
+                        col = `hsl(${h} ${s}% ${l}%)`;
+                    }
+                    try {
+                        document.body.style.backgroundColor = col;
+                        appendLine(`已将页面背景色设为: ${col}`);
+                    } catch (e) {
+                        appendLine(`无法设置颜色: ${col}`);
+                    }
+                } else if (lc.startsWith('set ')) {
+                    const parts = command.split(/\s+/);
+                    if (parts.length < 3) { appendLine('用法：set <name> <js-expr>'); }
+                    else {
+                        const name = parts[1];
+                        const expr = command.slice(command.indexOf(name) + name.length + 1);
+                        try {
+                            const val = (0, eval)(expr);
+                            window[name] = val;
+                            appendLine(`已设置全局 ${name}`);
+                        } catch (e) { appendLine('设置失败: ' + e); }
+                    }
+                } else if (lc.startsWith('get ')) {
+                    const parts = command.split(/\s+/);
+                    if (parts.length !== 2) { appendLine('用法：get <name>'); }
+                    else {
+                        const name = parts[1];
+                        try { appendLine(String(window[name])); } catch (e) { appendLine('读取失败'); }
+                    }
+                } else if (lc.startsWith('link')) {
+                    const parts = command.split(/\s+/);
+                    if (parts.length === 1) {
                         appendLine('可用链接: ' + Object.keys(links).join(', '));
                         appendLine('使用：link <name> 打开对应站点');
                     } else {
                         const name = parts[1].toLowerCase();
-                        if (linksNormalized[name]){
+                        if (linksNormalized[name]) {
                             appendLine(`正在打开: ${linksNormalized[name]}`);
-                            try{ window.open(linksNormalized[name], '_blank', 'noopener'); }catch(e){ /* ignore */ }
+                            try { window.open(linksNormalized[name], '_blank', 'noopener'); } catch (e) { /* ignore */ }
                         } else {
                             appendLine(`未知链接名: ${name}`);
                         }
                     }
-                } else if (commands[command]){
+                } else if (commands[command]) {
                     appendLine(commands[command]);
-                } else if (commands[lc]){
+                } else if (commands[lc]) {
                     appendLine(commands[lc]);
                 } else {
-                    // 未识别命令：将其当作 JS 代码在页面上下文执行，支持 console.* 捕获与 async/await
-                    try{
+                    try {
                         await executeJS(command);
-                    }catch(e){
+                    } catch (e) {
                         appendLine(`执行 JS 时出错: ${e}`);
                     }
                 }
 
                 terminalInput.value = '';
-                // 滚动到底部
                 document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
             }
-            // Tab 补全处理：按 Tab 在匹配项中循环并直接应用，不自动弹出建议框
-            else if (event.key === 'Tab'){
+            else if (event.key === 'Tab') {
                 event.preventDefault();
                 const val = terminalInput.value;
                 let matches = computeMatches(val);
-                // 如果用户未输入任何前缀，按 Tab 时列出所有命令供循环
-                if((val || '').trim() === ''){
+                if ((val || '').trim() === '') {
                     matches = Object.keys(commands).map(k => k.toLowerCase());
                 }
-                if(matches.length === 0) return;
-                // 计算当前 prefix
+                if (matches.length === 0) return;
                 const parts = (val.trim().split(/\s+/));
-                const prefix = (parts.length>=2 && parts[0].toLowerCase()==='link')? (parts[1].toLowerCase()) : (parts[0].toLowerCase());
-                if(prefix !== completionPrefix){
+                const prefix = (parts.length >= 2 && parts[0].toLowerCase() === 'link') ? (parts[1].toLowerCase()) : (parts[0].toLowerCase());
+                if (prefix !== completionPrefix) {
                     completionPrefix = prefix;
                     completionMatches = matches;
                     completionIndex = 0;
@@ -603,123 +604,103 @@
                     completionIndex = (completionIndex + 1) % Math.max(1, matches.length);
                 }
                 const choice = completionMatches[completionIndex];
-                if(choice) applyCompletion(choice);
-                // 隐藏建议框（确保没有视觉提示）
+                if (choice) applyCompletion(choice);
                 hideSuggestions();
             }
-            // 上下键也可在当前候选中切换并直接应用（不显示建议框）
-            else if (event.key === 'ArrowDown' || event.key === 'ArrowUp'){
-                if(completionMatches.length === 0) {
-                    // 没有候选则忽略
+            else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                if (completionMatches.length === 0) {
                     return;
                 }
                 event.preventDefault();
-                if(completionIndex === -1) completionIndex = 0;
-                if(event.key === 'ArrowDown') completionIndex = (completionIndex + 1) % completionMatches.length;
+                if (completionIndex === -1) completionIndex = 0;
+                if (event.key === 'ArrowDown') completionIndex = (completionIndex + 1) % completionMatches.length;
                 else completionIndex = (completionIndex - 1 + completionMatches.length) % completionMatches.length;
                 const choice = completionMatches[completionIndex];
-                if(choice) applyCompletion(choice);
-                // 不显示建议框
+                if (choice) applyCompletion(choice);
                 hideSuggestions();
             }
-            // Escape 隐藏建议
-            else if (event.key === 'Escape'){
+            else if (event.key === 'Escape') {
                 hideSuggestions();
             }
         });
 
-        // 实时根据输入更新匹配项，但不自动显示建议（用户按 Tab 时触发切换）
-        terminalInput.addEventListener('input', function(){
+        terminalInput.addEventListener('input', function () {
             completionMatches = computeMatches();
             completionIndex = -1;
-            // 不显示建议框，用户通过 Tab 在候选间切换
             hideSuggestions();
         });
 
-        // 点击终端空白处将隐藏建议
-        document.getElementById('terminal').addEventListener('click', function(e){
-            // 点击终端任何位置都应聚焦到输入框并可输入
-            try{
+        document.getElementById('terminal').addEventListener('click', function (e) {
+            try {
                 terminalInput.focus();
                 const len = terminalInput.value.length;
                 terminalInput.setSelectionRange(len, len);
-            }catch(e){/* ignore */}
-            // 若点击在 suggestions 内则不隐藏，除非点击的是其它区域
-            if(!e.target.closest || !e.target.closest('.suggestions')){
+            } catch (e) {/* ignore */ }
+            if (!e.target.closest || !e.target.closest('.suggestions')) {
                 hideSuggestions();
             }
         });
 
-        // 每次加载选择一个中国传统色并设置为页面纯色背景，计算对比以设置文字与终端高亮
-        (function setRandomChineseColor(){
+        (function setRandomChineseColor() {
             // 一组中国传统古典色（名称注释）——如需替换或扩展可以修改此列表
             const palette = [
-                {name:'胭脂', hex:'#c72c48'},
-                {name:'石榴红', hex:'#e45e4b'},
-                {name:'茜色', hex:'#9b2d30'},
-                {name:'檀色', hex:'#a04b3a'},
-                {name:'宋青', hex:'#2b6f77'},
-                {name:'黛蓝', hex:'#26547c'},
-                {name:'松花', hex:'#9db3b8'},
-                {name:'月白', hex:'#dfeef4'},
-                {name:'藤黄', hex:'#f5c26b'},
-                {name:'杏子', hex:'#f4a261'}
+                { name: '胭脂', hex: '#c72c48' },
+                { name: '石榴红', hex: '#e45e4b' },
+                { name: '茜色', hex: '#9b2d30' },
+                { name: '檀色', hex: '#a04b3a' },
+                { name: '宋青', hex: '#2b6f77' },
+                { name: '黛蓝', hex: '#26547c' },
+                { name: '松花', hex: '#9db3b8' },
+                { name: '月白', hex: '#dfeef4' },
+                { name: '藤黄', hex: '#f5c26b' },
+                { name: '杏子', hex: '#f4a261' }
             ];
 
-            const pick = palette[Math.floor(Math.random()*palette.length)];
-            document.body.style.backgroundColor = pick.hex; // 纯色背景
+            const pick = palette[Math.floor(Math.random() * palette.length)];
+            document.body.style.backgroundColor = pick.hex; 
 
-            // 计算亮度判断前景（文本/图标）应为浅色或深色
-            function hexToLuma(hex){
-                const c = hex.replace('#','');
-                const r = parseInt(c.substring(0,2),16)/255;
-                const g = parseInt(c.substring(2,4),16)/255;
-                const b = parseInt(c.substring(4,6),16)/255;
-                // 相对光度
-                const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+            function hexToLuma(hex) {
+                const c = hex.replace('#', '');
+                const r = parseInt(c.substring(0, 2), 16) / 255;
+                const g = parseInt(c.substring(2, 4), 16) / 255;
+                const b = parseInt(c.substring(4, 6), 16) / 255;
+                const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
                 return lum;
             }
 
             const lum = hexToLuma(pick.hex);
-            // 若背景较亮则使用深色文本，否则使用浅色文本
             const textColor = lum > 0.6 ? '#222' : '#eef6ff';
             document.documentElement.style.setProperty('--text-color', textColor);
 
-            // 生成与背景对比的终端高亮色：用 HSL 调色法基于背景色计算
-            // 将背景转换为 HSL 近似（取 RGB->HSL）
-            function hexToHsl(hex){
-                const c = hex.replace('#','');
-                let r = parseInt(c.substring(0,2),16)/255;
-                let g = parseInt(c.substring(2,4),16)/255;
-                let b = parseInt(c.substring(4,6),16)/255;
-                const max = Math.max(r,g,b), min = Math.min(r,g,b);
-                let h, s, l = (max+min)/2;
-                if(max===min){ h = s = 0; }
-                else{
-                    const d = max-min;
-                    s = l>0.5 ? d/(2-max-min) : d/(max+min);
-                    switch(max){
-                        case r: h = (g - b)/d + (g < b ? 6 : 0); break;
-                        case g: h = (b - r)/d + 2; break;
-                        case b: h = (r - g)/d + 4; break;
+            function hexToHsl(hex) {
+                const c = hex.replace('#', '');
+                let r = parseInt(c.substring(0, 2), 16) / 255;
+                let g = parseInt(c.substring(2, 4), 16) / 255;
+                let b = parseInt(c.substring(4, 6), 16) / 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) { h = s = 0; }
+                else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
                     }
                     h /= 6;
                 }
-                return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+                return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
             }
 
             const hsl = hexToHsl(pick.hex);
-            // 高亮取相邻色调并提高亮度以呈现霓虹感
             const accentHue = (hsl[0] + 40) % 360;
-            // 强制采用较亮的高亮色以确保提示符可见
             const accentLightness = '58%';
             const accent = `hsl(${accentHue} 90% ${accentLightness})`;
             document.documentElement.style.setProperty('--terminal-accent', accent);
-            // 同时设置一个更亮的变量用于提示符
             document.documentElement.style.setProperty('--terminal-accent-bright', `hsl(${accentHue} 95% 65%)`);
 
-            // 终端背景保持深色以便可读性；如果页面背景本身很暗，可稍微抬亮终端背景
-            if(lum < 0.25){
+            if (lum < 0.25) {
                 document.documentElement.style.setProperty('--terminal-background', 'rgba(8,10,12,0.85)');
             } else {
                 document.documentElement.style.setProperty('--terminal-background', 'rgba(12,14,18,0.9)');
@@ -727,4 +708,5 @@
         })();
     </script>
 </body>
+
 </html>
