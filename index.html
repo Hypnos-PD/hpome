@@ -357,7 +357,14 @@
 
         function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
         function appendLine(text) {
-            terminalOutput.innerHTML += `<span class="line" data-text="${escapeHtml(text)}"><span class="plain">${escapeHtml(text)}</span></span>\n`;
+            const span = document.createElement('span');
+            span.className = 'line';
+            span.setAttribute('data-text', escapeHtml(text));
+            const inner = document.createElement('span');
+            inner.className = 'plain';
+            inner.innerHTML = escapeHtml(text);
+            span.appendChild(inner);
+            terminalOutput.appendChild(span);
         }
 
         function formatForTerminal(v) {
