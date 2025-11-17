@@ -1,2 +1,0 @@
-# hpome
-personal homepage
