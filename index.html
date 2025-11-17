@@ -136,8 +136,7 @@
             overflow: hidden;
         }
 
-        .terminal-output .line::before{
-            content: attr(data-text);
+        .terminal-output .line .glow{
             position: absolute;
             left: 0;
             top: 0;
@@ -372,9 +371,13 @@
             const span = document.createElement('span');
             span.className = 'line';
             span.setAttribute('data-text', text);
+            const glow = document.createElement('span');
+            glow.className = 'glow';
+            glow.textContent = text;
             const inner = document.createElement('span');
             inner.className = 'plain';
             inner.textContent = text;
+            span.appendChild(glow);
             span.appendChild(inner);
             terminalOutput.appendChild(span);
         }
