@@ -345,10 +345,13 @@
             console.dir = function(...args){ capture('dir', args); try{ origDir.apply(console, args); }catch(e){} };
 
             try{
-                // 优先使用全局 eval 执行，这样用 `var` 声明的变量会挂到全局并在后续命令可见
+                // 为了在 REPL 中让变量可持久化，对简单的顶层 `let/const name = expr` 进行转换为 `window.name = expr`。
+                // 这会改变 let/const 的块级语义，但会更接近开发者控制台的 REPL 行为。
+                let transformed = code.replace(/^\s*(?:let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*/m, 'window.$1 = ');
+
                 let result;
                 try{
-                    result = (0, eval)(code);
+                    result = (0, eval)(transformed);
                     if(result instanceof Promise) result = await result;
                 }catch(e){
                     // 如果是因为包含 top-level await 导致的语法错误，则回退到异步 IIFE（注意：此模式下声明的局部变量不会持久化到全局）
@@ -390,8 +393,10 @@
             'cls': '清除终端（别名: clear）',
             'date': '显示当前日期和时间',
             'echo': '回显参数：echo <text>',
-            'uptime': '显示页面已运行的秒数'
-            , 'randbg': '随机更改页面背景颜色：randbg 或 randbg <hex|rgb(...)|cssColorName>'
+            'uptime': '显示页面已运行的秒数',
+            'randbg': '随机更改页面背景颜色：randbg 或 randbg <hex|rgb(...)|cssColorName>',
+            'set': '在全局范围设置变量：set <name> <js-expr> （等价于 window[name]=expr）',
+            'get': '读取全局变量：get <name>'
         };
 
         // 链接表：link 命令使用（保留原始键，并生成小写不敏感的映射）
@@ -524,6 +529,26 @@
                             appendLine(`已将页面背景色设为: ${col}`);
                         }catch(e){
                             appendLine(`无法设置颜色: ${col}`);
+                        }
+                    } else if (lc.startsWith('set ')){
+                        // set <name> <js-expr>
+                        const parts = command.split(/\s+/);
+                        if(parts.length < 3){ appendLine('用法：set <name> <js-expr>'); }
+                        else{
+                            const name = parts[1];
+                            const expr = command.slice(command.indexOf(name) + name.length + 1);
+                            try{
+                                const val = (0, eval)(expr);
+                                window[name] = val;
+                                appendLine(`已设置全局 ${name}`);
+                            }catch(e){ appendLine('设置失败: ' + e); }
+                        }
+                    } else if (lc.startsWith('get ')){
+                        const parts = command.split(/\s+/);
+                        if(parts.length !== 2) { appendLine('用法：get <name>'); }
+                        else{
+                            const name = parts[1];
+                            try{ appendLine(String(window[name])); }catch(e){ appendLine('读取失败'); }
                         }
                     } else if (lc.startsWith('link')){
                     const parts = command.split(/\s+/);
