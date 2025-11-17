@@ -345,9 +345,21 @@
             console.dir = function(...args){ capture('dir', args); try{ origDir.apply(console, args); }catch(e){} };
 
             try{
-                // 使用 Function 构造器在全局作用域中执行异步 IIFE，以支持 await
-                const fn = new Function('return (async function(){\n' + code + '\n})();');
-                const result = await fn();
+                // 优先使用全局 eval 执行，这样用 `var` 声明的变量会挂到全局并在后续命令可见
+                let result;
+                try{
+                    result = (0, eval)(code);
+                    if(result instanceof Promise) result = await result;
+                }catch(e){
+                    // 如果是因为包含 top-level await 导致的语法错误，则回退到异步 IIFE（注意：此模式下声明的局部变量不会持久化到全局）
+                    if(e instanceof SyntaxError && /\bawait\b/.test(code)){
+                        const fn = new Function('return (async function(){\n' + code + '\n})();');
+                        result = await fn();
+                    } else {
+                        throw e;
+                    }
+                }
+
                 if(typeof result !== 'undefined') appendLine(formatForTerminal(result));
             }catch(e){
                 appendLine('JS Error: ' + (e && e.stack ? e.stack : String(e)));
