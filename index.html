@@ -318,8 +318,7 @@
         <h1 class="motto">沈酣世味，混如酒蠁寻酸。</h1>
         <div class="avatar"></div>
         <div class="terminal" id="terminal">
-            <div class="terminal-output" id="terminal-output">欢迎。输入 'help' 获取可用命令列表。<br>你也可以在这里运行简单的 JavaScript 语句。<br>
-                </div>
+            <div class="terminal-output" id="terminal-output">欢迎。输入 'help' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。</div>
             <div class="terminal-input-line">
                 <span class="terminal-prompt">&gt;</span>
                 <input type="text" class="terminal-input" id="terminal-input" autofocus>
@@ -356,7 +355,15 @@
         const pageStart = Date.now();
 
         function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function cleanWhitespaceNodes(el){
+            const nodes = Array.from(el.childNodes);
+            for(const n of nodes){
+                if(n.nodeType === Node.TEXT_NODE && /^\s*$/.test(n.nodeValue)) n.remove();
+            }
+        }
+        cleanWhitespaceNodes(terminalOutput);
         function appendLine(text) {
+            cleanWhitespaceNodes(terminalOutput);
             const span = document.createElement('span');
             span.className = 'line';
             span.setAttribute('data-text', escapeHtml(text));
