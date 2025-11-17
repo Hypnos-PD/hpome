@@ -56,7 +56,7 @@
         .terminal {
             width: 80%;
             max-width: 800px;
-            height: 300px;
+            height: 420px; /* 增高以适配更大字体 */
             background-color: var(--terminal-background);
             color: var(--terminal-text);
             position: relative;
@@ -67,7 +67,7 @@
             text-align: left;
             border: none; /* 无圆角设计 */
             font-family: 'VT323', 'Noto Sans SC', 'Menlo', 'Monaco', 'Courier New', monospace; /* 窄像素/终端风格；中文回退到 Noto Sans SC */
-            font-size: 15px; /* 放大终端字体 */
+            font-size: 30px; /* 大幅放大终端字体（约原来的两倍） */
             background: rgba(8,10,12,0.92); /* 更深、统一的终端背景 */
             border: 1px solid rgba(255,255,255,0.04);
             box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 40px rgba(10,160,255,0.06) inset;
@@ -127,8 +127,8 @@
             white-space: pre-wrap;
             color: var(--terminal-text);
             position: relative;
-            font-size: 14px; /* 输出字体放大以匹配终端 */
-            line-height: 1.6;
+            font-size: 28px; /* 输出字体放大以匹配终端（约两倍） */
+            line-height: 1.45;
         }
 
         .terminal-output .line{
@@ -171,8 +171,8 @@
 
         /* 让提示符呈现霓虹渐变 */
         .terminal-prompt {
-            color: var(--terminal-accent);
-            text-shadow: 0 0 8px rgba(10,160,255,0.6);
+            color: var(--terminal-accent-bright, #7ce0ff);
+            text-shadow: 0 0 10px rgba(124,224,255,0.9), 0 1px 0 rgba(0,0,0,0.6);
         }
 
         footer {
@@ -202,6 +202,37 @@
             width: 24px;
             height: 24px;
             display: block;
+        }
+
+        /* 补全提示框（浮在输入行上方） */
+        .suggestions {
+            position: absolute;
+            left: 1.25rem;
+            right: 1.25rem;
+            bottom: 3.25rem; /* 在输入行上方 */
+            max-height: 160px;
+            overflow: auto;
+            background: rgba(6,8,10,0.9);
+            border: 1px solid rgba(255,255,255,0.04);
+            color: var(--terminal-text);
+            font-family: inherit;
+            font-size: 18px;
+            padding: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            z-index: 40;
+            display: none; /* 默认隐藏 */
+            gap: 6px;
+            border-radius: 4px;
+        }
+        .suggestions .item{
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .suggestions .item:hover,
+        .suggestions .item.active{
+            background: rgba(10,160,255,0.08);
+            color: var(--terminal-accent);
         }
 
         /* 无圆角设计 */
@@ -314,14 +345,108 @@
             'contact': '你可以通过以下方式联系我:\n' +
                    '  Email: [hypnospd@qq.com]\n' +
                    '  也可以通过页脚的社交媒体图标找到我。',
-            'clear': ''
+            'link': '打开我的其它网站: 使用 link <name> 打开对应站点',
+            'clear': '清除终端（别名: cls）',
+            'cls': '清除终端（别名: clear）',
+            'date': '显示当前日期和时间',
+            'echo': '回显参数：echo <text>',
+            'uptime': '显示页面已运行的秒数'
         };
 
-        // 链接表：link 命令使用
+        // 链接表：link 命令使用（保留原始键，并生成小写不敏感的映射）
         const links = {
             'WordleMathSolver': 'https://wdmt.hypd.asia',
-            'AzothPath': 'https://azoth.ttopoo.com',
+            'AzothPath': 'https://azoth.ttopoo.com'
         };
+
+        // 规范化 links：创建一个小写键到 URL 的不区分大小写映射，并保存原始名映射
+        const linksNormalized = {};
+        const linksOriginalName = {};
+        Object.keys(links).forEach(k => { linksNormalized[k.toLowerCase()] = links[k]; linksOriginalName[k.toLowerCase()] = k; });
+
+        // 补全相关状态
+        let completionMatches = [];
+        let completionIndex = -1;
+        let completionPrefix = '';
+
+        // 在终端内创建并管理建议列 UI（浮动、可点击）
+        const suggestionsEl = document.createElement('div');
+        suggestionsEl.id = 'suggestions';
+        suggestionsEl.className = 'suggestions';
+        document.getElementById('terminal').appendChild(suggestionsEl);
+
+        function showSuggestions(matches, highlightIndex = 0){
+            suggestionsEl.innerHTML = '';
+            if(!matches || matches.length === 0){
+                suggestionsEl.style.display = 'none';
+                return;
+            }
+            matches.slice(0,50).forEach((m, i) => {
+                const it = document.createElement('div');
+                it.className = 'item' + (i===highlightIndex? ' active':'');
+                // 若是 links 的键，显示原始大小写名以便可读
+                it.textContent = (linksOriginalName[m] || m);
+                it.tabIndex = 0;
+                it.addEventListener('click', () => {
+                    applyCompletion(m);
+                    terminalInput.focus();
+                });
+                suggestionsEl.appendChild(it);
+            });
+            suggestionsEl.style.display = 'block';
+        }
+
+        function hideSuggestions(){
+            suggestionsEl.style.display = 'none';
+        }
+
+        function applyCompletion(choice){
+            const val = terminalInput.value;
+            const parts = val.split(/\s+/);
+            if(parts.length <= 1 || (parts.length>0 && parts[0].toLowerCase() !== 'link')){
+                // 完成第一个词
+                terminalInput.value = choice + (choice.indexOf(' ')>=0? '':' ');
+            } else {
+                // 完成第二个词（如 link 命令）
+                // 若存在原始大小写名称，使用原始名称填充以便可读
+                parts[1] = (linksOriginalName[choice] || choice);
+                terminalInput.value = parts.slice(0,2).join(' ') + ' ';
+            }
+            // 重置状态
+            completionMatches = [];
+            completionIndex = -1;
+            completionPrefix = '';
+            hideSuggestions();
+        }
+
+        function computeMatches(raw){
+            const inputRaw = (typeof raw === 'string') ? raw : (terminalInput.value || '');
+            const endsWithSpace = /\s$/.test(inputRaw);
+            const parts = inputRaw.trim().split(/\s+/).filter(p=>p.length>0);
+
+            if(parts.length === 0){
+                // 空输入时不要显示任何补全
+                return [];
+            }
+
+            const first = parts[0].toLowerCase();
+            // 如果首词是 link，则对第二词进行补全（支持在输入了空格后显示全部键）
+            if(first === 'link'){
+                const secondPrefix = (parts[1] || '');
+                const keys = Object.keys(linksNormalized);
+                if(secondPrefix === '' && !endsWithSpace){
+                    // 用户可能输入了 "link" 没有空格，建议保留 link 本身
+                    return ['link'];
+                }
+                const pref = secondPrefix.toLowerCase();
+                return keys.filter(k => k.startsWith(pref));
+            }
+
+            // 非 link：仅补全命令名（不要混入 link 的参数）
+            const prefix = first;
+            const cmds = Object.keys(commands).map(k=>k.toLowerCase());
+            return cmds.filter(k => k.startsWith(prefix));
+        }
 
         terminalInput.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
@@ -345,14 +470,14 @@
                 } else if (lc.startsWith('link')){
                     const parts = command.split(/\s+/);
                     if (parts.length === 1){
-                        // 列出可用链接
+                        // 列出可用链接（显示原始键名）
                         appendLine('可用链接: ' + Object.keys(links).join(', '));
                         appendLine('使用：link <name> 打开对应站点');
                     } else {
                         const name = parts[1].toLowerCase();
-                        if (links[name]){
-                            appendLine(`正在打开: ${links[name]}`);
-                            try{ window.open(links[name], '_blank', 'noopener'); }catch(e){ /* ignore */ }
+                        if (linksNormalized[name]){
+                            appendLine(`正在打开: ${linksNormalized[name]}`);
+                            try{ window.open(linksNormalized[name], '_blank', 'noopener'); }catch(e){ /* ignore */ }
                         } else {
                             appendLine(`未知链接名: ${name}`);
                         }
@@ -373,6 +498,72 @@
                 terminalInput.value = '';
                 // 滚动到底部
                 document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+            }
+            // Tab 补全处理：按 Tab 在匹配项中循环并直接应用，不自动弹出建议框
+            else if (event.key === 'Tab'){
+                event.preventDefault();
+                const val = terminalInput.value;
+                let matches = computeMatches(val);
+                // 如果用户未输入任何前缀，按 Tab 时列出所有命令供循环
+                if((val || '').trim() === ''){
+                    matches = Object.keys(commands).map(k => k.toLowerCase());
+                }
+                if(matches.length === 0) return;
+                // 计算当前 prefix
+                const parts = (val.trim().split(/\s+/));
+                const prefix = (parts.length>=2 && parts[0].toLowerCase()==='link')? (parts[1].toLowerCase()) : (parts[0].toLowerCase());
+                if(prefix !== completionPrefix){
+                    completionPrefix = prefix;
+                    completionMatches = matches;
+                    completionIndex = 0;
+                } else {
+                    completionIndex = (completionIndex + 1) % Math.max(1, matches.length);
+                }
+                const choice = completionMatches[completionIndex];
+                if(choice) applyCompletion(choice);
+                // 隐藏建议框（确保没有视觉提示）
+                hideSuggestions();
+            }
+            // 上下键也可在当前候选中切换并直接应用（不显示建议框）
+            else if (event.key === 'ArrowDown' || event.key === 'ArrowUp'){
+                if(completionMatches.length === 0) {
+                    // 没有候选则忽略
+                    return;
+                }
+                event.preventDefault();
+                if(completionIndex === -1) completionIndex = 0;
+                if(event.key === 'ArrowDown') completionIndex = (completionIndex + 1) % completionMatches.length;
+                else completionIndex = (completionIndex - 1 + completionMatches.length) % completionMatches.length;
+                const choice = completionMatches[completionIndex];
+                if(choice) applyCompletion(choice);
+                // 不显示建议框
+                hideSuggestions();
+            }
+            // Escape 隐藏建议
+            else if (event.key === 'Escape'){
+                hideSuggestions();
+            }
+        });
+
+        // 实时根据输入更新匹配项，但不自动显示建议（用户按 Tab 时触发切换）
+        terminalInput.addEventListener('input', function(){
+            completionMatches = computeMatches();
+            completionIndex = -1;
+            // 不显示建议框，用户通过 Tab 在候选间切换
+            hideSuggestions();
+        });
+
+        // 点击终端空白处将隐藏建议
+        document.getElementById('terminal').addEventListener('click', function(e){
+            // 点击终端任何位置都应聚焦到输入框并可输入
+            try{
+                terminalInput.focus();
+                const len = terminalInput.value.length;
+                terminalInput.setSelectionRange(len, len);
+            }catch(e){/* ignore */}
+            // 若点击在 suggestions 内则不隐藏，除非点击的是其它区域
+            if(!e.target.closest || !e.target.closest('.suggestions')){
+                hideSuggestions();
             }
         });
 
@@ -437,8 +628,12 @@
             const hsl = hexToHsl(pick.hex);
             // 高亮取相邻色调并提高亮度以呈现霓虹感
             const accentHue = (hsl[0] + 40) % 360;
-            const accent = `hsl(${accentHue} 90% ${lum>0.6? '30%':'60%'})`;
+            // 强制采用较亮的高亮色以确保提示符可见
+            const accentLightness = '58%';
+            const accent = `hsl(${accentHue} 90% ${accentLightness})`;
             document.documentElement.style.setProperty('--terminal-accent', accent);
+            // 同时设置一个更亮的变量用于提示符
+            document.documentElement.style.setProperty('--terminal-accent-bright', `hsl(${accentHue} 95% 65%)`);
 
             // 终端背景保持深色以便可读性；如果页面背景本身很暗，可稍微抬亮终端背景
             if(lum < 0.25){
