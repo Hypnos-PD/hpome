@@ -133,15 +133,20 @@
             display: block;
             position: relative;
             padding-right: 0.25rem;
+            overflow: hidden;
         }
 
-        .terminal-output .line::before {
+        .terminal-output .line::before{
             content: attr(data-text);
             position: absolute;
             left: 0;
             top: 0;
+            right: 0;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
             color: var(--terminal-accent);
-            filter: blur(6px) saturate(1.6);
+            filter: blur(4px) saturate(1.6);
             opacity: 0.85;
             z-index: 0;
             pointer-events: none;
