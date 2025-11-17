@@ -66,7 +66,7 @@
             overflow-y: auto;
             text-align: left;
             border: none; /* 无圆角设计 */
-            font-family: 'VT323', 'Noto Sans SC', 'Menlo', 'Monaco', 'Courier New', monospace; /* 窄像素/终端风格；中文回退到 Noto Sans SC */
+            font-family: 'VT323', 'Noto Serif SC', 'Noto Sans SC', 'Menlo', 'Monaco', 'Courier New', monospace; /* 窄像素/终端风格；中文回退到 思源宋体 (Noto Serif SC) */
             font-size: 30px; /* 大幅放大终端字体（约原来的两倍） */
             background: rgba(8,10,12,0.92); /* 更深、统一的终端背景 */
             border: 1px solid rgba(255,255,255,0.04);
@@ -242,8 +242,8 @@
     </style>
     <!-- 引入开源图标库 Boxicons -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <!-- 引入更窄的像素/终端字体 VT323（Latin）与 Noto Sans SC（中文回退） -->
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 引入更窄的像素/终端字体 VT323（Latin）、思源宋体 (Noto Serif SC) 作为中文终端字体回退，以及 Noto Sans SC 备选 -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <!-- favicon 使用 GitHub avatar -->
     <link rel="icon" href="https://avatars.githubusercontent.com/u/177898240" />
 
@@ -329,6 +329,34 @@
             terminalOutput.innerHTML += `<span class="line" data-text="${escapeHtml(text)}"><span class="plain">${escapeHtml(text)}</span></span>\n`;
         }
 
+        // 将任意 JS 代码在页面上下文中执行，捕获 console 输出并显示在终端
+        function formatForTerminal(v){
+            try{ return typeof v === 'string' ? v : JSON.stringify(v, null, 2); }catch(e){ return String(v); }
+        }
+        async function executeJS(code){
+            const origLog = console.log, origInfo = console.info, origWarn = console.warn, origError = console.error, origDir = console.dir;
+            function capture(type, args){
+                try{ const txt = args.map(a=>formatForTerminal(a)).join(' '); appendLine(`[console.${type}] ${txt}`); }catch(e){ appendLine(`[console.${type}] (unprintable)`); }
+            }
+            console.log = function(...args){ capture('log', args); try{ origLog.apply(console, args); }catch(e){} };
+            console.info = function(...args){ capture('info', args); try{ origInfo.apply(console, args); }catch(e){} };
+            console.warn = function(...args){ capture('warn', args); try{ origWarn.apply(console, args); }catch(e){} };
+            console.error = function(...args){ capture('error', args); try{ origError.apply(console, args); }catch(e){} };
+            console.dir = function(...args){ capture('dir', args); try{ origDir.apply(console, args); }catch(e){} };
+
+            try{
+                // 使用 Function 构造器在全局作用域中执行异步 IIFE，以支持 await
+                const fn = new Function('return (async function(){\n' + code + '\n})();');
+                const result = await fn();
+                if(typeof result !== 'undefined') appendLine(formatForTerminal(result));
+            }catch(e){
+                appendLine('JS Error: ' + (e && e.stack ? e.stack : String(e)));
+            }
+
+            // 恢复 console
+            try{ console.log = origLog; console.info = origInfo; console.warn = origWarn; console.error = origError; console.dir = origDir; }catch(e){}
+        }
+
         // 可用的静态命令文本（动态命令在解析器中处理）
         const commands = {
             'help': '可用的命令: \n' +
@@ -351,6 +379,7 @@
             'date': '显示当前日期和时间',
             'echo': '回显参数：echo <text>',
             'uptime': '显示页面已运行的秒数'
+            , 'randbg': '随机更改页面背景颜色：randbg 或 randbg <hex|rgb(...)|cssColorName>'
         };
 
         // 链接表：link 命令使用（保留原始键，并生成小写不敏感的映射）
@@ -448,7 +477,7 @@
             return cmds.filter(k => k.startsWith(prefix));
         }
 
-        terminalInput.addEventListener('keydown', function(event) {
+        terminalInput.addEventListener('keydown', async function(event) {
             if (event.key === 'Enter') {
                 const command = terminalInput.value.trim();
                 if (!command) return; // 忽略空输入
@@ -456,18 +485,35 @@
                 // 显示命令行本身
                 appendLine('> ' + command);
 
-                // 动态命令解析（优先）
-                const lc = command.toLowerCase();
-                if (lc === 'clear' || lc === 'cls'){
-                    terminalOutput.innerHTML = '';
-                } else if (lc === 'date'){
-                    appendLine(new Date().toString());
-                } else if (lc.startsWith('echo ')){
-                    appendLine(command.slice(5));
-                } else if (lc === 'uptime'){
-                    const s = Math.floor((Date.now()-pageStart)/1000);
-                    appendLine(`页面已运行: ${s} 秒`);
-                } else if (lc.startsWith('link')){
+                    // 动态命令解析（优先）
+                    const lc = command.toLowerCase();
+                    if (lc === 'clear' || lc === 'cls'){
+                        terminalOutput.innerHTML = '';
+                    } else if (lc === 'date'){
+                        appendLine(new Date().toString());
+                    } else if (lc.startsWith('echo ')){
+                        appendLine(command.slice(5));
+                    } else if (lc === 'uptime'){
+                        const s = Math.floor((Date.now()-pageStart)/1000);
+                        appendLine(`页面已运行: ${s} 秒`);
+                    } else if (lc === 'randbg' || lc.startsWith('randbg ')){
+                        // randbg [color]
+                        const parts = command.split(/\s+/);
+                        let col = parts[1];
+                        if(!col){
+                            // 随机生成一个鲜艳的 HSL 颜色
+                            const h = Math.floor(Math.random()*360);
+                            const s = 60 + Math.floor(Math.random()*30);
+                            const l = 45 + Math.floor(Math.random()*15);
+                            col = `hsl(${h} ${s}% ${l}%)`;
+                        }
+                        try{
+                            document.body.style.backgroundColor = col;
+                            appendLine(`已将页面背景色设为: ${col}`);
+                        }catch(e){
+                            appendLine(`无法设置颜色: ${col}`);
+                        }
+                    } else if (lc.startsWith('link')){
                     const parts = command.split(/\s+/);
                     if (parts.length === 1){
                         // 列出可用链接（显示原始键名）
@@ -487,11 +533,11 @@
                 } else if (commands[lc]){
                     appendLine(commands[lc]);
                 } else {
-                    try {
-                        const result = eval(command);
-                        appendLine(String(result));
-                    } catch (e) {
-                        appendLine(`命令未找到: ${command}`);
+                    // 未识别命令：将其当作 JS 代码在页面上下文执行，支持 console.* 捕获与 async/await
+                    try{
+                        await executeJS(command);
+                    }catch(e){
+                        appendLine(`执行 JS 时出错: ${e}`);
                     }
                 }
 
