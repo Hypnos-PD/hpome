@@ -99,6 +99,12 @@
             outline: none;
         }
 
+        .terminal, .terminal-output, .terminal-output .line, .terminal-output .line .plain {
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
         .terminal::before {
             content: "";
             position: absolute;
@@ -646,6 +652,41 @@
             }
         });
 
+        function insertAtCursor(text){
+            try{
+                const el = terminalInput;
+                const start = el.selectionStart || 0;
+                const end = el.selectionEnd || 0;
+                el.value = el.value.slice(0,start) + text + el.value.slice(end);
+                const pos = start + (text ? text.length : 0);
+                el.setSelectionRange(pos,pos);
+                el.focus();
+            }catch(e){}
+        }
+
+        document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+        document.getElementById('terminal').addEventListener('contextmenu', async function(e){
+            e.preventDefault();
+            try{
+                const txt = await navigator.clipboard.readText();
+                insertAtCursor(txt);
+            }catch(e){}
+        });
+
+        document.addEventListener('keydown', async function(e){
+            if((e.ctrlKey || e.metaKey) && e.key && e.key.toLowerCase() === 'c'){
+                e.preventDefault();
+                try{
+                    const nodes = Array.from(document.querySelectorAll('.terminal-output .line .plain'));
+                    const text = nodes.map(n => n.textContent).join('\n');
+                    await navigator.clipboard.writeText(text);
+                    appendLine('已复制终端内容到剪贴板');
+                }catch(e){
+                    appendLine('复制失败');
+                }
+            }
+        });
         terminalInput.addEventListener('input', function () {
             completionMatches = computeMatches();
             completionIndex = -1;
