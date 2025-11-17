@@ -371,10 +371,10 @@
             cleanWhitespaceNodes(terminalOutput);
             const span = document.createElement('span');
             span.className = 'line';
-            span.setAttribute('data-text', escapeHtml(text));
+            span.setAttribute('data-text', text);
             const inner = document.createElement('span');
             inner.className = 'plain';
-            inner.innerHTML = escapeHtml(text);
+            inner.textContent = text;
             span.appendChild(inner);
             terminalOutput.appendChild(span);
         }
