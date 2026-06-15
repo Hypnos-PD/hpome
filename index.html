@@ -106,6 +106,7 @@
             font-size: inherit;
             width: 100%;
             outline: none;
+            animation: cursorBlink 1s step-end infinite;
         }
 
         .terminal, .terminal-output, .terminal-output .line, .terminal-output .line .plain {
@@ -254,7 +255,6 @@
             z-index: 40;
             display: none;
             gap: 6px;
-            border-radius: 4px;
         }
 
         .suggestions .item {
@@ -272,6 +272,20 @@
         * {
             border-radius: 0 !important;
         }
+
+        @keyframes cursorBlink {
+            0%, 49% { caret-color: var(--terminal-accent); }
+            50%, 100% { caret-color: transparent; }
+        }
+
+        @media (max-width: 600px) {
+            .motto { font-size: 1.6rem; }
+            .avatar { width: 180px; height: 180px; margin-bottom: 1.5rem; }
+            .terminal { width: 95%; font-size: 20px; height: 340px; }
+            .terminal-output { font-size: 18px; }
+            .container { padding: 1rem; }
+            .suggestions { font-size: 15px; left: 0.75rem; right: 0.75rem; bottom: 2.75rem; }
+        }
     </style>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link
@@ -279,54 +293,13 @@
         rel="stylesheet">
     <!-- favicon 使用 GitHub avatar -->
     <link rel="icon" href="https://avatars.githubusercontent.com/u/177898240" />
-
-    <svg width="0" height="0" style="position:absolute;">
-        <defs>
-            <filter id="crtFilter" x="-20%" y="-20%" width="140%" height="140%" primitiveUnits="objectBoundingBox">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" result="blurred" id="baseBlur" />
-                <animate xlink:href="#baseBlur" attributeName="stdDeviation" values="0.3;1.1;0.4" dur="6s"
-                    repeatCount="indefinite" />
-
-                <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                    result="rOnly" />
-                <feOffset in="rOnly" dx="-0.6" dy="0" result="rOffset" />
-                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                    result="gOnly" />
-                <feOffset in="gOnly" dx="0.2" dy="0" result="gOffset" />
-                <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-                    result="bOnly" />
-                <feOffset in="bOnly" dx="0.6" dy="0" result="bOffset" />
-
-                <feBlend in="rOffset" in2="gOffset" mode="screen" result="rg" />
-                <feBlend in="rg" in2="bOffset" mode="screen" result="rgbAber" />
-                <feGaussianBlur in="rgbAber" stdDeviation="2" result="glow" id="glowBlur" />
-                <animate xlink:href="#glowBlur" attributeName="stdDeviation" values="1.2;3.6;1.2" dur="5.5s"
-                    repeatCount="indefinite" />
-
-                <feBlend in="blurred" in2="glow" mode="screen" result="blurGlow" />
-
-                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch" result="noise"
-                    id="noiseTurb" />
-                <animate xlink:href="#noiseTurb" attributeName="baseFrequency" values="0.6;1.2;0.6" dur="7s"
-                    repeatCount="indefinite" />
-                <feColorMatrix in="noise" type="saturate" values="0" result="noiseMono" />
-                <feComponentTransfer in="noiseMono" result="noiseAlpha">
-                    <feFuncA type="table" tableValues="0 0.06" />
-                </feComponentTransfer>
-                <feComposite in="noiseAlpha" in2="blurGlow" operator="in" result="glowWithNoise" />
-
-                <feBlend in="SourceGraphic" in2="glowWithNoise" mode="screen" result="final" />
-                <feComposite in="final" in2="SourceGraphic" operator="over" />
-            </filter>
-        </defs>
-    </svg>
 </head>
 
 <body>
 
     <div class="container">
         <h1 class="motto">沈酣世味，浑如酒蠁寻酸。</h1>
-        <div class="avatar"></div>
+        <div class="avatar" role="img" aria-label="HypnosPD 头像"></div>
         <div class="terminal" id="terminal">
             <div class="terminal-output" id="terminal-output"><span class="line" data-text="欢迎。输入 'help' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。"><span class="plain">欢迎。输入 'help' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。</span></span></div>
             <div class="terminal-input-line">
@@ -379,415 +352,195 @@
     </footer>
 
     <script>
+
         const terminalOutput = document.getElementById('terminal-output');
         const terminalInput = document.getElementById('terminal-input');
         const pageStart = Date.now();
+        const commandHistory = []; let historyIndex = -1; let savedInput = '';
+        let lastOutputCount = 0;
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) { terminalInput.removeAttribute('autofocus'); terminalInput.placeholder = '点击输入...'; }
 
-        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-        function cleanWhitespaceNodes(el){
-            const nodes = Array.from(el.childNodes);
-            for(const n of nodes){
-                if(n.nodeType === Node.TEXT_NODE && /^\s*$/.test(n.nodeValue)) n.remove();
-            }
-        }
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }
+        function cleanWhitespaceNodes(el){ const nodes = Array.from(el.childNodes); for(const n of nodes){ if(n.nodeType === Node.TEXT_NODE && /^\s*$/.test(n.nodeValue)) n.remove(); } }
         cleanWhitespaceNodes(terminalOutput);
+
+        typeLine('欢迎。输入 \'help\' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。');
+
+        function typeLine(text, callback) {
+            const span = document.createElement('span'); span.className = 'line'; span.setAttribute('data-text', text);
+            const glow = document.createElement('span'); glow.className = 'glow';
+            const inner = document.createElement('span'); inner.className = 'plain';
+            span.appendChild(glow); span.appendChild(inner); terminalOutput.appendChild(span);
+            let i = 0; const iv = setInterval(() => {
+                inner.textContent += text[i]; glow.textContent += text[i]; i++;
+                if (i >= text.length) { clearInterval(iv); if (callback) callback(); }
+                document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+            }, 45 + Math.random() * 25);
+        }
+
         function appendLine(text) {
-            cleanWhitespaceNodes(terminalOutput);
-            const span = document.createElement('span');
-            span.className = 'line';
-            span.setAttribute('data-text', text);
-            const glow = document.createElement('span');
-            glow.className = 'glow';
-            glow.textContent = text;
-            const inner = document.createElement('span');
-            inner.className = 'plain';
-            inner.textContent = text;
-            span.appendChild(glow);
-            span.appendChild(inner);
-            terminalOutput.appendChild(span);
+            cleanWhitespaceNodes(terminalOutput); const span = document.createElement('span'); span.className = 'line'; span.setAttribute('data-text', text);
+            const glow = document.createElement('span'); glow.className = 'glow'; glow.textContent = text;
+            const inner = document.createElement('span'); inner.className = 'plain'; inner.textContent = text;
+            span.appendChild(glow); span.appendChild(inner); terminalOutput.appendChild(span);
         }
 
-        function formatForTerminal(v) {
-            try { return typeof v === 'string' ? v : JSON.stringify(v, null, 2); } catch (e) { return String(v); }
+        function formatForTerminal(v) { try { return typeof v === 'string' ? v : JSON.stringify(v, null, 2); } catch (e) { return String(v); } }
+
+        async function handleCurl(cmd) {
+            const parts = cmd.split(/\s+/); let method='GET',url='',headers={},body=null,i=1,onlyHeaders=false;
+            while (i < parts.length) { const p = parts[i];
+                if (p==='-I'||p==='--head'){onlyHeaders=true;i++;continue;}
+                if (p==='-X'||p==='--request'){method=parts[++i]||'GET';i++;continue;}
+                if (p==='-d'||p==='--data'){body=parts[++i]||'';i++;continue;}
+                if (p==='-H'||p==='--header'){const h=parts[++i]||'';const s=h.indexOf(':');if(s>=0)headers[h.slice(0,s).trim()]=h.slice(s+1).trim();i++;continue;}
+                if (!p.startsWith('-')){url=p;i++;continue;} i++; }
+            if (!url){appendLine('curl: 需要 URL');return;} if(!/^https?:\/\//.test(url))url='https://'+url;
+            try{const opts={method,headers};if(body){if(method==='GET')method='POST';opts.method=method;opts.body=body;}
+                const res=await fetch(url,opts);
+                if(onlyHeaders){appendLine('HTTP '+res.status+' '+res.statusText);res.headers.forEach((v,k)=>appendLine(k+': '+v));}
+                else{const t=await res.text();appendLine(t.length>2000?t.slice(0,2000)+'\n... (截断，共 '+t.length+' 字节)':t);}
+            }catch(e){appendLine('curl 错误: '+e.message);}
         }
+
         async function executeJS(code) {
-            const origLog = console.log, origInfo = console.info, origWarn = console.warn, origError = console.error, origDir = console.dir;
-            function capture(type, args) {
-                try { const txt = args.map(a => formatForTerminal(a)).join(' '); appendLine(`[console.${type}] ${txt}`); } catch (e) { appendLine(`[console.${type}] (unprintable)`); }
-            }
-            console.log = function (...args) { capture('log', args); try { origLog.apply(console, args); } catch (e) { } };
-            console.info = function (...args) { capture('info', args); try { origInfo.apply(console, args); } catch (e) { } };
-            console.warn = function (...args) { capture('warn', args); try { origWarn.apply(console, args); } catch (e) { } };
-            console.error = function (...args) { capture('error', args); try { origError.apply(console, args); } catch (e) { } };
-            console.dir = function (...args) { capture('dir', args); try { origDir.apply(console, args); } catch (e) { } };
-
-            try {
-                let transformed = code.replace(/^\s*(?:let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*/m, 'window.$1 = ');
-
-                let result;
-                try {
-                    result = (0, eval)(transformed);
-                    if (result instanceof Promise) result = await result;
-                } catch (e) {
-                    if (e instanceof SyntaxError && /\bawait\b/.test(code)) {
-                        const fn = new Function('return (async function(){\n' + code + '\n})();');
-                        result = await fn();
-                    } else {
-                        throw e;
-                    }
-                }
-
-                if (typeof result !== 'undefined') appendLine(formatForTerminal(result));
-            } catch (e) {
-                appendLine('JS Error: ' + (e && e.stack ? e.stack : String(e)));
-            }
-
-            try { console.log = origLog; console.info = origInfo; console.warn = origWarn; console.error = origError; console.dir = origDir; } catch (e) { }
+            const oL=console.log,oI=console.info,oW=console.warn,oE=console.error,oD=console.dir;
+            function cap(ty,args){try{appendLine('[console.'+ty+'] '+args.map(formatForTerminal).join(' '));}catch(e){}}
+            console.log=(...a)=>{cap('log',a);try{oL.apply(console,a)}catch(e){}};
+            console.info=(...a)=>{cap('info',a);try{oI.apply(console,a)}catch(e){}};
+            console.warn=(...a)=>{cap('warn',a);try{oW.apply(console,a)}catch(e){}};
+            console.error=(...a)=>{cap('error',a);try{oE.apply(console,a)}catch(e){}};
+            console.dir=(...a)=>{cap('dir',a);try{oD.apply(console,a)}catch(e){}};
+            try{let t=code.replace(/^\s*(?:let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*/m,'window.$1='),r;
+                try{r=(0,eval)(t);if(r instanceof Promise)r=await r;}
+                catch(e){if(e instanceof SyntaxError&&/\bawait\b/.test(code)){r=await new Function('return (async function(){\n'+code+'\n})();')();}else throw e;}
+                if(typeof r!=='undefined')appendLine(formatForTerminal(r));
+            }catch(e){appendLine('[!] '+(e&&e.message?e.message:String(e)));}
+            console.log=oL;console.info=oI;console.warn=oW;console.error=oE;console.dir=oD;
         }
 
         const commands = {
-            'help': '可用的命令: \n' +
-                '  help - 显示所有可用命令\n' +
-                '  about - 关于我\n' +
-                '  contact - 联系方式\n' +
-                '  clear / cls - 清除终端\n' +
-                '  date - 显示当前时间\n' +
-                '  echo <text> - 回显文本\n' +
-                '  uptime - 页面运行时间\n' +
-                '  link [name] - 导航到我的其它网站，或不带参数列出可用站点',
-            'about': '你好，我是HypnosPD，目前本科在读\n' +
-                '有言即达，百无禁忌。',
-            'contact': '你可以通过以下方式联系我:\n' +
-                '  Email: [hypnospd@qq.com]\n' +
-                '  也可以通过页脚的社交媒体图标找到我。',
+            'help': '可用的命令: \n  help / about / contact / clear / date / echo / uptime / history / !! / link / curl / wget / ping / base64 / hash / rev / wc / env / which / man / sleep / cal / exit / copy / neofetch / sudo / randbg / set / get\n  管道: cmd1 | cmd2',
+            'about': '你好，我是HypnosPD，目前本科在读\n有言即达，百无禁忌。',
+            'contact': 'Email: [hypnospd@qq.com]\n也可以通过页脚的社交媒体图标找到我。',
             'link': '打开我的其它网站: 使用 link <name> 打开对应站点',
-            'clear': '清除终端（别名: cls）',
-            'cls': '清除终端（别名: clear）',
-            'date': '显示当前日期和时间',
-            'echo': '回显参数：echo <text>',
-            'uptime': '显示页面已运行的秒数',
-            'randbg': '随机更改页面背景颜色：randbg 或 randbg <hex|rgb(...)|cssColorName>',
-            'set': '在全局范围设置变量：set <name> <js-expr> （等价于 window[name]=expr）',
+            'clear': '清除终端（别名: cls）', 'cls': '清除终端（别名: clear）',
+            'date': '显示当前日期和时间', 'echo': '回显参数：echo <text>',
+            'uptime': '显示页面已运行的秒数', 'history': '显示最近的命令历史记录',
+            '!!': '重复上一条命令', 'sudo': '以超级用户权限执行命令（但愿能行）',
+            'neofetch': '显示系统信息', 'curl': '发送 HTTP 请求：curl <url> [-I] [-X] [-d]',
+            'wget': '下载网页：wget <url>', 'ping': '测试延迟：ping <url>',
+            'base64': 'Base64 编解码：base64 [-d] <text>', 'hash': 'SHA-256 哈希：hash <text>',
+            'rev': '反转文本：rev <text>', 'wc': '文本统计：wc <text>',
+            'env': '显示浏览器环境信息', 'which': '查找命令：which <cmd>',
+            'man': '查看命令手册：man <cmd>', 'sleep': '等待 n 毫秒：sleep <n>',
+            'cal': '显示当月日历', 'exit': '退出终端',
+            'copy': '复制上一条命令的输出（别名: cp / yank）',
+            'randbg': '随机更改页面背景颜色', 'set': '设置全局变量：set <name> <js-expr>',
             'get': '读取全局变量：get <name>'
         };
 
         const links = {
+            'WBArts': 'https://sva.hypd.asia',
             'MuralMaster': 'https://hiero.hypd.asia',
             'WordleMathSolver': 'https://wdmt.hypd.asia',
-            'AzothPath': 'https://azoth.ttopoo.com'
+            'AzothPath': 'https://azoth.ttopoo.com',
+            'StSVLogs': 'https://stsvlogs.hypd.asia'
         };
+        const linksNormalized={}, linksOriginalName={}; Object.keys(links).forEach(k=>{linksNormalized[k.toLowerCase()]=links[k];linksOriginalName[k.toLowerCase()]=k;});
 
-        const linksNormalized = {};
-        const linksOriginalName = {};
-        Object.keys(links).forEach(k => { linksNormalized[k.toLowerCase()] = links[k]; linksOriginalName[k.toLowerCase()] = k; });
+        let completionMatches=[], completionIndex=-1, completionPrefix='';
+        const suggestionsEl=document.createElement('div'); suggestionsEl.id='suggestions'; suggestionsEl.className='suggestions'; document.getElementById('terminal').appendChild(suggestionsEl);
+        function showSuggestions(matches,h=0){suggestionsEl.innerHTML='';if(!matches||!matches.length){suggestionsEl.style.display='none';return;}matches.slice(0,50).forEach((m,i)=>{const it=document.createElement('div');it.className='item'+(i===h?' active':'');it.textContent=linksOriginalName[m]||m;it.tabIndex=0;it.addEventListener('click',()=>{applyCompletion(m);terminalInput.focus();});suggestionsEl.appendChild(it);});suggestionsEl.style.display='block';}
+        function hideSuggestions(){suggestionsEl.style.display='none';}
+        function applyCompletion(c){const v=terminalInput.value,p=v.split(/\s+/);if(p.length<=1||p[0].toLowerCase()!=='link'){terminalInput.value=c+(c.indexOf(' ')>=0?'':' ');}else{p[1]=linksOriginalName[c]||c;terminalInput.value=p.slice(0,2).join(' ')+' ';}completionMatches=[];completionIndex=-1;completionPrefix='';hideSuggestions();}
+        function computeMatches(r){const i=(typeof r==='string'?r:terminalInput.value||''),es=/\s$/.test(i),p=i.trim().split(/\s+/).filter(x=>x.length>0);if(!p.length)return[];const f=p[0].toLowerCase();if(f==='link'){const sp=p[1]||'',ks=Object.keys(linksNormalized);if(sp===''&&!es)return['link'];return ks.filter(k=>k.startsWith(sp.toLowerCase()));}return Object.keys(commands).map(k=>k.toLowerCase()).filter(k=>k.startsWith(f));}
 
-        let completionMatches = [];
-        let completionIndex = -1;
-        let completionPrefix = '';
-
-        const suggestionsEl = document.createElement('div');
-        suggestionsEl.id = 'suggestions';
-        suggestionsEl.className = 'suggestions';
-        document.getElementById('terminal').appendChild(suggestionsEl);
-
-        function showSuggestions(matches, highlightIndex = 0) {
-            suggestionsEl.innerHTML = '';
-            if (!matches || matches.length === 0) {
-                suggestionsEl.style.display = 'none';
-                return;
+        async function runCommand(cmd) {
+            const lc = cmd.toLowerCase();
+            if(lc==='clear'||lc==='cls'){terminalOutput.innerHTML='';}
+            else if(lc==='date'){appendLine(new Date().toString());}
+            else if(lc.startsWith('echo ')){appendLine(cmd.slice(5));}
+            else if(lc==='uptime'){appendLine('页面已运行: '+Math.floor((Date.now()-pageStart)/1000)+' 秒');}
+            else if(lc==='randbg'||lc.startsWith('randbg ')){const p=cmd.split(/\s+/);let c=p[1];if(!c)c='hsl('+Math.floor(Math.random()*360)+' '+Math.floor(60+Math.random()*30)+'% '+Math.floor(45+Math.random()*15)+'%)';try{document.body.style.backgroundColor=c;appendLine('已将页面背景色设为: '+c);}catch(e){appendLine('无法设置颜色: '+c);}}
+            else if(lc.startsWith('set ')){const p=cmd.split(/\s+/);if(p.length<3)appendLine('用法：set <name> <js-expr>');else{const n=p[1],e=cmd.slice(cmd.indexOf(n)+n.length+1);try{window[n]=(0,eval)(e);appendLine('已设置全局 '+n);}catch(e){appendLine('设置失败: '+e);}}}
+            else if(lc.startsWith('get ')){const p=cmd.split(/\s+/);if(p.length!==2)appendLine('用法：get <name>');else try{appendLine(String(window[p[1]]));}catch(e){appendLine('读取失败');}}
+            else if(lc.startsWith('link')){const p=cmd.split(/\s+/);if(p.length===1){appendLine('可用链接: '+Object.keys(links).join(', '));appendLine('使用：link <name> 打开对应站点');}else{const n=p[1].toLowerCase();if(linksNormalized[n]){appendLine('正在打开: '+linksNormalized[n]);try{window.open(linksNormalized[n],'_blank','noopener');}catch(e){}}else appendLine('未知链接名: '+n);}}
+            else if(lc==='!!'){if(!commandHistory.length)appendLine('没有上一条命令');else{const last=commandHistory[commandHistory.length-1];terminalInput.value=last;setTimeout(()=>{terminalInput.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));},10);return;}}
+            else if(lc==='history'){if(!commandHistory.length)appendLine('暂无命令历史');else commandHistory.forEach((c,i)=>appendLine((i+1)+'  '+c));}
+            else if(lc==='sudo'){appendLine('权限不足。你不是 HypnosPD。');}
+            else if(lc==='neofetch'){const ua=navigator.userAgent;let os='Unknown',br='Unknown';if(/Windows/.test(ua))os='Windows';else if(/Mac/.test(ua))os='macOS';else if(/Linux/.test(ua))os='Linux';else if(/Android/.test(ua))os='Android';else if(/iPhone|iPad/.test(ua))os='iOS';if(/Edg/.test(ua))br='Edge';else if(/Chrome/.test(ua)&&!/Edg/.test(ua))br='Chrome';else if(/Firefox/.test(ua))br='Firefox';else if(/Safari/.test(ua)&&!/Chrome/.test(ua))br='Safari';appendLine('       OS: '+os);appendLine('  Browser: '+br);appendLine('  Resolut: '+window.screen.width+'x'+window.screen.height);appendLine('   Uptime: '+Math.floor((Date.now()-pageStart)/1000)+'s');appendLine('    Shell: hpome v0.2');}
+            else if(lc.startsWith('curl ')){await handleCurl(cmd);}
+            else if(lc==='wget'||lc.startsWith('wget ')){const u=cmd.split(/\s+/)[1];if(!u)appendLine('wget: 需要 URL');else{await handleCurl('curl '+u);appendLine('已存入变量 _');}}
+            else if(lc.startsWith('ping ')){const u=cmd.split(/\s+/)[1];if(!u)appendLine('ping: 需要 URL');else{const t0=performance.now();try{await fetch((/^https?:\/\//.test(u)?'':'https://')+u,{method:'HEAD'});appendLine('来自 '+u+' 的响应: 时间='+(performance.now()-t0).toFixed(0)+'ms');}catch(e){appendLine('请求失败: '+(e.message||String(e)).slice(0,60));}}}
+            else if(lc==='base64'||lc.startsWith('base64 ')){const p=cmd.split(/\s+/);let d=!1,idx=1;if(p[1]==='-d'){d=!0;idx=2;}const t=p.slice(idx).join(' ')||window._;if(!t)appendLine('base64: 需要文本或管道输入');else try{appendLine(d?atob(t):btoa(t));}catch(e){appendLine('[!] '+e.message);}}
+            else if(lc==='hash'||lc.startsWith('hash ')){const t=cmd.split(/\s+/).slice(1).join(' ')||window._;if(!t)appendLine('hash: 需要文本或管道输入');else{const e=new TextEncoder().encode(t),b=await crypto.subtle.digest('SHA-256',e);appendLine([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));}}
+            else if(lc==='rev'||lc.startsWith('rev ')){const t=cmd.split(/\s+/).slice(1).join(' ')||window._;if(!t)appendLine('rev: 需要文本或管道输入');else appendLine(t.split('').reverse().join(''));}
+            else if(lc==='wc'||lc.startsWith('wc ')){const t=cmd.split(/\s+/).slice(1).join(' ')||window._;if(!t)appendLine('wc: 需要文本或管道输入');else{const ls=t.split('\n'),ws=t.split(/\s+/).filter(Boolean).length;appendLine(ls.length+' 行  '+ws+' 词  '+t.length+' 字符');}}
+            else if(lc==='env'){appendLine('USER=guest');appendLine('HOST=hpome');appendLine('LANG='+navigator.language);appendLine('TZ='+Intl.DateTimeFormat().resolvedOptions().timeZone);appendLine('ONLINE='+navigator.onLine);appendLine('UA='+navigator.userAgent.slice(0,50)+'...');}
+            else if(lc.startsWith('which ')){const n=cmd.split(/\s+/)[1];appendLine(n&&(commands[n]||commands[n.toLowerCase()])?'hpome: 内置命令':'which: 未找到 '+(n||'?'));}
+            else if(lc.startsWith('man ')){const n=cmd.split(/\s+/)[1],i=n&&(commands[n]||commands[n.toLowerCase()]);appendLine(i||'man: 没有 '+(n||'?')+' 的手册页');}
+            else if(lc.startsWith('sleep ')){const ms=parseInt(cmd.split(/\s+/)[1]);if(isNaN(ms))appendLine('sleep: 需要毫秒数');else{await new Promise(r=>setTimeout(r,Math.min(ms,30000)));appendLine('已等待 '+ms+'ms');}}
+            else if(lc==='cal'){const n=new Date(),y=n.getFullYear(),m=n.getMonth(),f=new Date(y,m,1).getDay(),d=new Date(y,m+1,0).getDate();let c='日 一 二 三 四 五 六\n';c+='   '.repeat(f);for(let i=1;i<=d;i++){c+=(i<10?' ':'')+i+' ';if((i+f)%7===0)c+='\n';}appendLine(c);}
+            else if(lc==='exit'){terminalOutput.innerHTML='';appendLine('连接已关闭。');}
+            else if(lc==='copy'||lc==='yank'||lc==='cp'){
+                const all=terminalOutput.querySelectorAll('.line .plain');
+                const text=Array.from(all).slice(lastOutputCount).map(e=>e.textContent).join('\n');
+                if(!text){appendLine('没有可复制的内容');}
+                else{try{await navigator.clipboard.writeText(text);appendLine('已复制上一条命令的输出');}catch(e){appendLine('复制失败');}}
             }
-            matches.slice(0, 50).forEach((m, i) => {
-                const it = document.createElement('div');
-                it.className = 'item' + (i === highlightIndex ? ' active' : '');
-                it.textContent = (linksOriginalName[m] || m);
-                it.tabIndex = 0;
-                it.addEventListener('click', () => {
-                    applyCompletion(m);
-                    terminalInput.focus();
-                });
-                suggestionsEl.appendChild(it);
-            });
-            suggestionsEl.style.display = 'block';
+            else{try{await executeJS(cmd);}catch(e){appendLine('[!] '+(e.message||String(e)));}}
         }
 
-        function hideSuggestions() {
-            suggestionsEl.style.display = 'none';
-        }
-
-        function applyCompletion(choice) {
-            const val = terminalInput.value;
-            const parts = val.split(/\s+/);
-            if (parts.length <= 1 || (parts.length > 0 && parts[0].toLowerCase() !== 'link')) {
-                terminalInput.value = choice + (choice.indexOf(' ') >= 0 ? '' : ' ');
-            } else {
-                parts[1] = (linksOriginalName[choice] || choice);
-                terminalInput.value = parts.slice(0, 2).join(' ') + ' ';
-            }
-            completionMatches = [];
-            completionIndex = -1;
-            completionPrefix = '';
-            hideSuggestions();
-        }
-
-        function computeMatches(raw) {
-            const inputRaw = (typeof raw === 'string') ? raw : (terminalInput.value || '');
-            const endsWithSpace = /\s$/.test(inputRaw);
-            const parts = inputRaw.trim().split(/\s+/).filter(p => p.length > 0);
-
-            if (parts.length === 0) {
-                return [];
-            }
-
-            const first = parts[0].toLowerCase();
-            if (first === 'link') {
-                const secondPrefix = (parts[1] || '');
-                const keys = Object.keys(linksNormalized);
-                if (secondPrefix === '' && !endsWithSpace) {
-                    return ['link'];
+        terminalInput.addEventListener('keydown', async function(event) {
+            if(event.key==='Enter'){
+                const command=terminalInput.value.trim(); if(!command)return;
+                if(command.includes('|')){
+                    const segs=command.split('|').map(s=>s.trim());
+                    lastOutputCount=terminalOutput.querySelectorAll('.line .plain').length;
+                    appendLine('> '+command); let pipedInput='';
+                    for(let si=0;si<segs.length;si++){const seg=segs[si];if(!seg)continue;
+                        if(pipedInput)window._=pipedInput; const captured=[]; const real=appendLine;
+                        appendLine=(t)=>{captured.push(t);};
+                        try{await runCommand(seg);}catch(e){captured.push('[!] '+(e.message||String(e)));}
+                        appendLine=real; pipedInput=captured.join('\n');
+                        if(si===segs.length-1)captured.forEach(l=>real(l));
+                    }
+                    commandHistory.push(command);historyIndex=-1;savedInput='';terminalInput.value='';
+                    document.getElementById('terminal').scrollTop=document.getElementById('terminal').scrollHeight; return;
                 }
-                const pref = secondPrefix.toLowerCase();
-                return keys.filter(k => k.startsWith(pref));
+                if(command!=='copy'&&command!=='cp'&&command!=='yank')
+                    lastOutputCount=terminalOutput.querySelectorAll('.line .plain').length;
+                appendLine('> '+command); await runCommand(command);
+                commandHistory.push(command);historyIndex=-1;savedInput='';terminalInput.value='';
+                document.getElementById('terminal').scrollTop=document.getElementById('terminal').scrollHeight;
             }
-
-            const prefix = first;
-            const cmds = Object.keys(commands).map(k => k.toLowerCase());
-            return cmds.filter(k => k.startsWith(prefix));
-        }
-
-        terminalInput.addEventListener('keydown', async function (event) {
-            if (event.key === 'Enter') {
-                const command = terminalInput.value.trim();
-                if (!command) return; 
-
-                appendLine('> ' + command);
-
-                const lc = command.toLowerCase();
-                if (lc === 'clear' || lc === 'cls') {
-                    terminalOutput.innerHTML = '';
-                } else if (lc === 'date') {
-                    appendLine(new Date().toString());
-                } else if (lc.startsWith('echo ')) {
-                    appendLine(command.slice(5));
-                } else if (lc === 'uptime') {
-                    const s = Math.floor((Date.now() - pageStart) / 1000);
-                    appendLine(`页面已运行: ${s} 秒`);
-                } else if (lc === 'randbg' || lc.startsWith('randbg ')) {
-                    const parts = command.split(/\s+/);
-                    let col = parts[1];
-                    if (!col) {
-                        const h = Math.floor(Math.random() * 360);
-                        const s = 60 + Math.floor(Math.random() * 30);
-                        const l = 45 + Math.floor(Math.random() * 15);
-                        col = `hsl(${h} ${s}% ${l}%)`;
-                    }
-                    try {
-                        document.body.style.backgroundColor = col;
-                        appendLine(`已将页面背景色设为: ${col}`);
-                    } catch (e) {
-                        appendLine(`无法设置颜色: ${col}`);
-                    }
-                } else if (lc.startsWith('set ')) {
-                    const parts = command.split(/\s+/);
-                    if (parts.length < 3) { appendLine('用法：set <name> <js-expr>'); }
-                    else {
-                        const name = parts[1];
-                        const expr = command.slice(command.indexOf(name) + name.length + 1);
-                        try {
-                            const val = (0, eval)(expr);
-                            window[name] = val;
-                            appendLine(`已设置全局 ${name}`);
-                        } catch (e) { appendLine('设置失败: ' + e); }
-                    }
-                } else if (lc.startsWith('get ')) {
-                    const parts = command.split(/\s+/);
-                    if (parts.length !== 2) { appendLine('用法：get <name>'); }
-                    else {
-                        const name = parts[1];
-                        try { appendLine(String(window[name])); } catch (e) { appendLine('读取失败'); }
-                    }
-                } else if (lc.startsWith('link')) {
-                    const parts = command.split(/\s+/);
-                    if (parts.length === 1) {
-                        appendLine('可用链接: ' + Object.keys(links).join(', '));
-                        appendLine('使用：link <name> 打开对应站点');
-                    } else {
-                        const name = parts[1].toLowerCase();
-                        if (linksNormalized[name]) {
-                            appendLine(`正在打开: ${linksNormalized[name]}`);
-                            try { window.open(linksNormalized[name], '_blank', 'noopener'); } catch (e) { /* ignore */ }
-                        } else {
-                            appendLine(`未知链接名: ${name}`);
-                        }
-                    }
-                } else if (commands[command]) {
-                    appendLine(commands[command]);
-                } else if (commands[lc]) {
-                    appendLine(commands[lc]);
-                } else {
-                    try {
-                        await executeJS(command);
-                    } catch (e) {
-                        appendLine(`执行 JS 时出错: ${e}`);
-                    }
-                }
-
-                terminalInput.value = '';
-                document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+            else if(event.key==='Tab'){event.preventDefault();const val=terminalInput.value;let matches=computeMatches(val);if((val||'').trim()==='')matches=Object.keys(commands).map(k=>k.toLowerCase());if(!matches.length)return;const p=val.trim().split(/\s+/);const pf=(p.length>=2&&p[0].toLowerCase()==='link')?p[1].toLowerCase():p[0].toLowerCase();if(pf!==completionPrefix){completionPrefix=pf;completionMatches=matches;completionIndex=0;}else{completionIndex=(completionIndex+1)%Math.max(1,matches.length);}const c=completionMatches[completionIndex];if(c)applyCompletion(c);hideSuggestions();}
+            else if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+                if(completionMatches.length>0){event.preventDefault();if(completionIndex===-1)completionIndex=0;if(event.key==='ArrowDown')completionIndex=(completionIndex+1)%completionMatches.length;else completionIndex=(completionIndex-1+completionMatches.length)%completionMatches.length;const c=completionMatches[completionIndex];if(c)applyCompletion(c);hideSuggestions();}
+                else if(commandHistory.length>0){event.preventDefault();if(historyIndex===-1)savedInput=terminalInput.value;if(event.key==='ArrowUp'){if(historyIndex===-1)historyIndex=commandHistory.length-1;else if(historyIndex>0)historyIndex--;}else{if(historyIndex!==-1&&historyIndex<commandHistory.length-1)historyIndex++;else{historyIndex=-1;terminalInput.value=savedInput;return;}}terminalInput.value=commandHistory[historyIndex];hideSuggestions();}
             }
-            else if (event.key === 'Tab') {
-                event.preventDefault();
-                const val = terminalInput.value;
-                let matches = computeMatches(val);
-                if ((val || '').trim() === '') {
-                    matches = Object.keys(commands).map(k => k.toLowerCase());
-                }
-                if (matches.length === 0) return;
-                const parts = (val.trim().split(/\s+/));
-                const prefix = (parts.length >= 2 && parts[0].toLowerCase() === 'link') ? (parts[1].toLowerCase()) : (parts[0].toLowerCase());
-                if (prefix !== completionPrefix) {
-                    completionPrefix = prefix;
-                    completionMatches = matches;
-                    completionIndex = 0;
-                } else {
-                    completionIndex = (completionIndex + 1) % Math.max(1, matches.length);
-                }
-                const choice = completionMatches[completionIndex];
-                if (choice) applyCompletion(choice);
-                hideSuggestions();
-            }
-            else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                if (completionMatches.length === 0) {
-                    return;
-                }
-                event.preventDefault();
-                if (completionIndex === -1) completionIndex = 0;
-                if (event.key === 'ArrowDown') completionIndex = (completionIndex + 1) % completionMatches.length;
-                else completionIndex = (completionIndex - 1 + completionMatches.length) % completionMatches.length;
-                const choice = completionMatches[completionIndex];
-                if (choice) applyCompletion(choice);
-                hideSuggestions();
-            }
-            else if (event.key === 'Escape') {
-                hideSuggestions();
-            }
+            else if(event.key==='Escape'){hideSuggestions();}
         });
 
-        function insertAtCursor(text){
-            try{
-                const el = terminalInput;
-                const start = el.selectionStart || 0;
-                const end = el.selectionEnd || 0;
-                el.value = el.value.slice(0,start) + text + el.value.slice(end);
-                const pos = start + (text ? text.length : 0);
-                el.setSelectionRange(pos,pos);
-                el.focus();
-            }catch(e){}
-        }
+        function insertAtCursor(text){try{const e=terminalInput,s=e.selectionStart||0,en=e.selectionEnd||0;e.value=e.value.slice(0,s)+text+e.value.slice(en);e.setSelectionRange(s+(text?text.length:0),s+(text?text.length:0));e.focus();}catch(e){}}
+        document.addEventListener('contextmenu',function(e){e.preventDefault();});
+        document.getElementById('terminal').addEventListener('contextmenu',async function(e){e.preventDefault();try{insertAtCursor(await navigator.clipboard.readText());}catch(e){}});
+        document.addEventListener('keydown',async function(e){if((e.ctrlKey||e.metaKey)&&e.key&&e.key.toLowerCase()==='c'){e.preventDefault();try{const n=Array.from(document.querySelectorAll('.terminal-output .line .plain'));await navigator.clipboard.writeText(n.map(x=>x.textContent).join('\n'));appendLine('已复制终端内容到剪贴板');}catch(e){appendLine('复制失败');}}});
+        terminalInput.addEventListener('input',function(){completionMatches=computeMatches();completionIndex=-1;hideSuggestions();});
+        document.getElementById('terminal').addEventListener('click',function(e){try{terminalInput.focus();terminalInput.setSelectionRange(terminalInput.value.length,terminalInput.value.length);}catch(e){}if(!e.target.closest||!e.target.closest('.suggestions'))hideSuggestions();});
 
-        document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-
-        document.getElementById('terminal').addEventListener('contextmenu', async function(e){
-            e.preventDefault();
-            try{
-                const txt = await navigator.clipboard.readText();
-                insertAtCursor(txt);
-            }catch(e){}
-        });
-
-        document.addEventListener('keydown', async function(e){
-            if((e.ctrlKey || e.metaKey) && e.key && e.key.toLowerCase() === 'c'){
-                e.preventDefault();
-                try{
-                    const nodes = Array.from(document.querySelectorAll('.terminal-output .line .plain'));
-                    const text = nodes.map(n => n.textContent).join('\n');
-                    await navigator.clipboard.writeText(text);
-                    appendLine('已复制终端内容到剪贴板');
-                }catch(e){
-                    appendLine('复制失败');
-                }
-            }
-        });
-        terminalInput.addEventListener('input', function () {
-            completionMatches = computeMatches();
-            completionIndex = -1;
-            hideSuggestions();
-        });
-
-        document.getElementById('terminal').addEventListener('click', function (e) {
-            try {
-                terminalInput.focus();
-                const len = terminalInput.value.length;
-                terminalInput.setSelectionRange(len, len);
-            } catch (e) {/* ignore */ }
-            if (!e.target.closest || !e.target.closest('.suggestions')) {
-                hideSuggestions();
-            }
-        });
-
-        (function setRandomChineseColor() {
-            // 一组中国传统古典色（名称注释）——如需替换或扩展可以修改此列表
-            const palette = [
-                { name: '胭脂', hex: '#c72c48' },
-                { name: '石榴红', hex: '#e45e4b' },
-                { name: '茜色', hex: '#9b2d30' },
-                { name: '檀色', hex: '#a04b3a' },
-                { name: '宋青', hex: '#2b6f77' },
-                { name: '黛蓝', hex: '#26547c' },
-                { name: '松花', hex: '#9db3b8' },
-                { name: '月白', hex: '#dfeef4' },
-                { name: '藤黄', hex: '#f5c26b' },
-                { name: '杏子', hex: '#f4a261' }
-            ];
-
-            const pick = palette[Math.floor(Math.random() * palette.length)];
-            document.body.style.backgroundColor = pick.hex; 
-
-            function hexToLuma(hex) {
-                const c = hex.replace('#', '');
-                const r = parseInt(c.substring(0, 2), 16) / 255;
-                const g = parseInt(c.substring(2, 4), 16) / 255;
-                const b = parseInt(c.substring(4, 6), 16) / 255;
-                const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                return lum;
-            }
-
-            const lum = hexToLuma(pick.hex);
-            const textColor = lum > 0.6 ? '#222' : '#eef6ff';
-            document.documentElement.style.setProperty('--text-color', textColor);
-
-            function hexToHsl(hex) {
-                const c = hex.replace('#', '');
-                let r = parseInt(c.substring(0, 2), 16) / 255;
-                let g = parseInt(c.substring(2, 4), 16) / 255;
-                let b = parseInt(c.substring(4, 6), 16) / 255;
-                const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                let h, s, l = (max + min) / 2;
-                if (max === min) { h = s = 0; }
-                else {
-                    const d = max - min;
-                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                    switch (max) {
-                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                        case g: h = (b - r) / d + 2; break;
-                        case b: h = (r - g) / d + 4; break;
-                    }
-                    h /= 6;
-                }
-                return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
-            }
-
-            const hsl = hexToHsl(pick.hex);
-            const accentHue = (hsl[0] + 40) % 360;
-            const accentLightness = '58%';
-            const accent = `hsl(${accentHue} 90% ${accentLightness})`;
-            document.documentElement.style.setProperty('--terminal-accent', accent);
-            document.documentElement.style.setProperty('--terminal-accent-bright', `hsl(${accentHue} 95% 65%)`);
-
-            if (lum < 0.25) {
-                document.documentElement.style.setProperty('--terminal-background', 'rgba(8,10,12,0.85)');
-            } else {
-                document.documentElement.style.setProperty('--terminal-background', 'rgba(12,14,18,0.9)');
-            }
+        (function setRandomChineseColor(){
+            const palette=[{h:'#c72c48'},{h:'#e45e4b'},{h:'#9b2d30'},{h:'#a04b3a'},{h:'#2b6f77'},{h:'#26547c'},{h:'#9db3b8'},{h:'#dfeef4'},{h:'#f5c26b'},{h:'#f4a261'}];
+            const pick=palette[Math.floor(Math.random()*palette.length)];document.body.style.backgroundColor=pick.h;
+            function hl(x){const c=x.replace('#','');const r=parseInt(c.substring(0,2),16)/255,g=parseInt(c.substring(2,4),16)/255,b=parseInt(c.substring(4,6),16)/255;return 0.2126*r+0.7152*g+0.0722*b;}
+            const lum=hl(pick.h);document.documentElement.style.setProperty('--text-color',lum>0.6?'#222':'#eef6ff');
+            function ht(x){const c=x.replace('#','');let r=parseInt(c.substring(0,2),16)/255,g=parseInt(c.substring(2,4),16)/255,b=parseInt(c.substring(4,6),16)/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}return[Math.round(h*360),Math.round(s*100),Math.round(l*100)];}
+            const hsl=ht(pick.h);const ah=(hsl[0]+40)%360;
+            document.documentElement.style.setProperty('--terminal-accent','hsl('+ah+' 90% 58%)');
+            document.documentElement.style.setProperty('--terminal-accent-bright','hsl('+ah+' 95% 65%)');
+            document.documentElement.style.setProperty('--terminal-background',lum<0.25?'rgba(8,10,12,0.85)':'rgba(12,14,18,0.9)');
         })();
     </script>
 </body>
