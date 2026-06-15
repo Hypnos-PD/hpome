@@ -461,7 +461,8 @@
 
         async function runCommand(cmd) {
             const lc = cmd.toLowerCase();
-            if(lc==='clear'||lc==='cls'){terminalOutput.innerHTML='';}
+            if(lc==='help'||lc==='about'||lc==='contact'){appendLine(commands[lc]);}
+            else if(lc==='clear'||lc==='cls'){terminalOutput.innerHTML='';}
             else if(lc==='date'){appendLine(new Date().toString());}
             else if(lc.startsWith('echo ')){appendLine(cmd.slice(5));}
             else if(lc==='uptime'){appendLine('页面已运行: '+Math.floor((Date.now()-pageStart)/1000)+' 秒');}
