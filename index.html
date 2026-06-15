@@ -301,7 +301,7 @@
         <h1 class="motto">沈酣世味，浑如酒蠁寻酸。</h1>
         <div class="avatar" role="img" aria-label="HypnosPD 头像"></div>
         <div class="terminal" id="terminal">
-            <div class="terminal-output" id="terminal-output"><span class="line" data-text="欢迎。输入 'help' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。"><span class="plain">欢迎。输入 'help' 获取可用命令列表。你也可以在这里运行简单的 JavaScript 语句。</span></span></div>
+            <div class="terminal-output" id="terminal-output"></div>
             <div class="terminal-input-line">
                 <span class="terminal-prompt">&gt;</span>
                 <input type="text" class="terminal-input" id="terminal-input" autofocus>
@@ -386,6 +386,8 @@
             span.appendChild(glow); span.appendChild(inner); terminalOutput.appendChild(span);
         }
 
+        function friendlyError(msg) { const s = String(msg||''); if (/(\w+)\s+is not defined/.test(s)) return '未识别的命令或变量: '+RegExp.$1; if (/Unexpected token/.test(s)) return '语法错误：表达式不完整'; if (/(\w+)\s+is not a function/.test(s)) return RegExp.$1 + ' 不是一个函数'; return s.replace(/^\[!\]\s*/,''); }
+
         function formatForTerminal(v) { try { return typeof v === 'string' ? v : JSON.stringify(v, null, 2); } catch (e) { return String(v); } }
 
         async function handleCurl(cmd) {
@@ -416,7 +418,7 @@
                 try{r=(0,eval)(t);if(r instanceof Promise)r=await r;}
                 catch(e){if(e instanceof SyntaxError&&/\bawait\b/.test(code)){r=await new Function('return (async function(){\n'+code+'\n})();')();}else throw e;}
                 if(typeof r!=='undefined')appendLine(formatForTerminal(r));
-            }catch(e){appendLine('[!] '+(e&&e.message?e.message:String(e)));}
+            }catch(e){appendLine(friendlyError(e&&e.message?e.message:String(e)));}
             console.log=oL;console.info=oI;console.warn=oW;console.error=oE;console.dir=oD;
         }
 
@@ -490,7 +492,7 @@
                 if(!text){appendLine('没有可复制的内容');}
                 else{try{await navigator.clipboard.writeText(text);appendLine('已复制上一条命令的输出');}catch(e){appendLine('复制失败');}}
             }
-            else{try{await executeJS(cmd);}catch(e){appendLine('[!] '+(e.message||String(e)));}}
+            else{try{await executeJS(cmd);}catch(e){appendLine(friendlyError(e.message||String(e)));}}
         }
 
         terminalInput.addEventListener('keydown', async function(event) {
@@ -510,9 +512,10 @@
                     commandHistory.push(command);historyIndex=-1;savedInput='';terminalInput.value='';
                     document.getElementById('terminal').scrollTop=document.getElementById('terminal').scrollHeight; return;
                 }
+                appendLine('> '+command);
                 if(command!=='copy'&&command!=='cp'&&command!=='yank')
                     lastOutputCount=terminalOutput.querySelectorAll('.line .plain').length;
-                appendLine('> '+command); await runCommand(command);
+                await runCommand(command);
                 commandHistory.push(command);historyIndex=-1;savedInput='';terminalInput.value='';
                 document.getElementById('terminal').scrollTop=document.getElementById('terminal').scrollHeight;
             }
